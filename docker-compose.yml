@@ -1,0 +1,15 @@
+services:
+  physical-ai-app:
+    build: .
+    image: physical-ai-app
+    container_name: physical_ai_crew
+    # .env 파일에서 환경변수를 자동으로 불러옵니다.
+    env_file:
+      - .env
+    # 터미널 대화형(input) 입력을 위한 필수 옵션
+    stdin_open: true 
+    tty: true
+    volumes:
+      - ./docs:/app/docs
+      - ./reports:/app/reports
+      - ./index.html:/app/index.html

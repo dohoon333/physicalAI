@@ -1,0 +1,3 @@
+crewai==1.15.8
+langchain-google-genai
+pydantic
