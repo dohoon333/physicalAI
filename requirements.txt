@@ -1,3 +1,12 @@
+# CrewAI 멀티 에이전트 보고서 생성 앱(app.py) 의존성
+#
+# 실행 환경: Python 3.12 (Dockerfile의 python:3.12-slim 기준)
+# 주의: crewai 1.15.x는 Requires-Python <3.14 이므로 Python 3.14 환경에서는 설치되지 않는다.
+#       app.py는 README의 Docker 절차로 실행하는 것을 전제로 한다.
+#
+# 전처리 파이프라인(harvest_pipeline)의 의존성은 Python 버전 제약이 다르므로
+# requirements-pipeline.txt로 분리되어 있다.
+
 crewai==1.15.8
 langchain-google-genai
 pydantic

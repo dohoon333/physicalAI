@@ -1,0 +1,19 @@
+# 방울토마토 수확 전처리 파이프라인(harvest_pipeline) 의존성
+#
+# 지원 Python: 3.11 ~ 3.14 (검증 환경: Python 3.14.4)
+# CrewAI 앱(requirements.txt)은 Python <3.14 제약이 있어 별도 파일로 분리했다.
+#
+# 버전 상한을 명시하는 이유("개발환경 버전 관리"):
+# 전처리 결과는 OpenCV/NumPy의 수치 동작(색공간 변환 반올림, 필터 커널 처리)에 직접
+# 의존한다. 메이저 버전이 올라가면 같은 입력에도 임계값 판정이 달라져 재현성이 깨질 수
+# 있으므로 호환 범위를 고정한다. 실제 배포 시에는 `pip freeze > requirements-lock.txt`로
+# 정확한 버전을 고정(lock)해 사용할 것을 권장한다.
+
+numpy>=2.0,<3.0
+opencv-python-headless>=5.0,<6.0   # GUI 불필요(헤드리스 서버 / Jetson Edge 환경용)
+scipy>=1.15,<2.0                  # cKDTree — 포인트클라우드 이상치 제거
+pydantic>=2.10,<3.0               # 설정 스키마 검증
+PyYAML>=6.0,<7.0                  # YAML 설정 로딩
+
+# 테스트
+pytest>=8.0

@@ -1,0 +1,102 @@
+# 방울토마토 수확 전처리 파이프라인 기본 설정
+#
+# 모든 값의 근거는 docs/robot_arm_pick_and_place_prd.md (PRD v2) 및
+# docs/cherry_tomato_harvest_preprocessing_pipeline.md (전처리 파이프라인 v2)에 있다.
+#
+# 실제 현장 조사(docs/cherry_tomato_harvest_field_survey_checklist.md)가 완료되면
+# 이 파일을 복사해 현장별 설정(예: configs/greenhouse_A.yaml)을 만들어 사용한다.
+# 코드는 수정하지 않는다 — 모든 임계값은 이 YAML에서만 조정한다.
+#
+# 주의: 이 파일은 코드 기본값(harvest_pipeline/config.py)과 정확히 일치해야 한다.
+# tests/test_harvest_pipeline.py::TestConfig::test_shipped_default_yaml_matches_code_defaults가
+# 이 동기화를 상시 검증한다.
+
+# 센서 동기화 (Stage 0)
+sensor_sync:
+  max_timestamp_drift_ms: 15.0
+
+# 색상 캘리브레이션 — 절대 색도를 보존하는 선형 보정만 수행(CLAHE 미사용, 전처리 문서 3.4절)
+color_calibration:
+  white_balance_reference_percentile: 99.0
+  target_mean_luminance: 128.0
+  max_gain: 3.0
+
+# 정반사 하이라이트 억제 — 체크리스트 A-6(표면 광택), B-6(관수 물방울) 대응
+highlight_suppression:
+  saturation_max: 60
+  value_min: 235
+  inpaint_radius_px: 5
+
+# 그림자 제거 — 체크리스트 C-4(잎에 의한 불규칙 그림자) 대응
+shadow_removal:
+  background_blur_kernel_px: 51  # 홀수여야 함(cv2.medianBlur 제약)
+
+# Depth 필터링 — 근접 촬영 거리(체크리스트 D-3) 기준 클리핑
+# bilateral_sigma_color는 보존할 구조의 깊이 기복(과실 지름 15~30mm)보다 작아야 한다.
+# 이 값이 크면 과실 표면이 평탄화되어 구 피팅 반지름이 과대 추정된다.
+depth_filter:
+  bilateral_diameter: 5
+  bilateral_sigma_color: 5.0
+  bilateral_sigma_space: 5.0
+  hole_inpaint_radius_px: 3
+  near_clip_mm: 100.0
+  far_clip_mm: 1200.0
+
+# 포인트클라우드 경량화 — Edge(Jetson Orin NX) 연산 부하 관리
+point_cloud:
+  voxel_size_mm: 2.0
+  outlier_k_neighbors: 12
+  outlier_std_ratio: 2.0
+
+# Stage A: 숙성도 판별 게이트 (PRD 5.1-1항)
+ripeness_gate:
+  confidence_threshold: 0.9
+  max_recapture_retries: 2
+  target_stages:
+    - light_red
+    - red
+  multi_patch_sample_count: 5          # 체크리스트 A-3 불균일 발색 대응(2D 격자로 분배)
+  cracking_edge_density_threshold: 0.12  # 체크리스트 A-7 열과 검출
+  catface_circularity_min: 0.8           # 체크리스트 A-8 기형과 검출
+
+# Stage B: 파지·절단 결합 포즈 (PRD 4장 / 5.1-3항)
+# 기구학 모델은 "측면 접근": 로봇이 Pedicel 축에 수직인 방향(카메라 쪽)에서 진입하고,
+# 그리퍼는 과실 중심을 파지하며, 절단날은 축 방향으로 blade_axial_offset_mm 앞서 있다.
+grasp_cut_pose:
+  fruit_diameter_range_mm: [15.0, 30.0]
+  min_points_for_sphere_fit: 30
+  pedicel_cut_window_mm: [5.0, 10.0]
+  cut_precision_target_mm: 2.0          # PRD v2 3장 KPI (±2mm)
+  occlusion_visible_ratio_min: 0.5
+  min_axis_confidence: 0.55             # linearity 기준 — 원반형(≈0.0)과 막대형(≈1.0) 구분
+  blade_axial_offset_mm: 18.0           # 하드웨어 상수. 반지름(7.5~15) + 절단창 중앙(7.5)과 호환되어야 함
+  blade_offset_tolerance_mm: 6.0        # 초과 시 칼날이 절단창을 벗어나 SKIP_UNREACHABLE_OFFSET
+  approach_clearance_mm: 60.0           # pre-grasp 후퇴 거리(충돌 검사 구간)
+  collision_safety_margin_mm: 5.0       # 그리퍼 손가락 반폭 기준. 과실 반지름보다 크게 잡으면
+                                        # 트러스에서 접촉해 자라는 정상 인접 과실이 전부 차단된다
+  target_fruit_exclusion_margin_mm: 2.0 # 목표 과실 파지는 충돌이 아니므로 검사에서 제외
+
+# 로봇 작업 공간 (PRD v2 4장 — 리치 900mm급 + 수직 리프트 축)
+robot_workspace:
+  reach_mm: 900.0
+  truss_height_range_mm: [500.0, 2200.0]
+  aisle_width_range_mm: [800.0, 1200.0]
+
+# 타임아웃 (PRD 5.1-7항)
+# 비전 추론은 워커 스레드 + future.result(timeout)으로 호출자를 해제한다. 파이썬 스레드는
+# 강제 종료할 수 없어 워커는 계속 실행되므로(협조적 취소 불가), 연속 타임아웃 시에는
+# 상위 감시자가 프로세스를 재시작해야 한다.
+timeouts:
+  vision_inference_timeout_s: 5.0
+  grasp_cut_execution_timeout_s: 20.0
+  truss_processing_timeout_s: 480.0  # 트러스 전체 8분
+
+# 로깅 — 콘솔(사람용) + JSON Lines 파일(대시보드 KPI 집계용) 이중 출력
+# 여러 로봇이 같은 경로를 쓰면 RotatingFileHandler의 로테이션이 프로세스 간 조정되지 않아
+# 로그가 유실될 수 있다. 로봇별로 log_dir 또는 json_lines_filename을 분리할 것.
+logging:
+  log_dir: logs
+  level: INFO
+  max_bytes: 10000000
+  backup_count: 5
+  json_lines_filename: harvest_pipeline.jsonl
