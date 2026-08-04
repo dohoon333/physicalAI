@@ -1,105 +1,1472 @@
 <!DOCTYPE html>
-<html lang="ko" class="scroll-smooth">
+<html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CropGuard-V1 | 농작물 질병 감지기</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        body { background-color: #0f172a; color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; }
-        .glass-panel { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
-        .gradient-text { background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GraspFlow — AI 비전 기반 로봇팔 Pick & Place 자동화</title>
+<meta name="description" content="GraspNet 6-DOF 파지점 추정으로 비정형·무질서 물체까지 자동 파지. 픽 성공률 97%, 사이클 4초, 신규 SKU 1시간 티칭.">
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+/* ============================================================
+   GraspFlow Design System — Single Source of Truth
+   GDWEB Winner-class editorial. Light warm gray + lime accent.
+   No gradients. No glassmorphism. No neon. No AI slop.
+   ============================================================ */
+
+:root {
+  /* Color tokens — exhaustive, no other colors may ever appear */
+  --bg-primary: #E6E7E3;
+  --surface: #FFFFFF;
+  --accent: #B6E63A;
+  --text-headline: #1A1A1A;
+  --text-body: #5F5F5F;
+  --border-subtle: rgba(26,26,26,0.08);
+  --border-hover: rgba(26,26,26,0.20);
+
+  /* Shape */
+  --radius-lg: 28px;
+  --radius-md: 24px;
+  --radius-pill: 999px;
+
+  /* Depth — single soft shadow only */
+  --shadow: 0px 12px 32px rgba(0,0,0,0.08);
+  --shadow-hover: 0px 16px 40px rgba(0,0,0,0.10);
+
+  /* Motion */
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Type */
+  --font: 'Pretendard', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+*::selection { background: var(--accent); color: var(--text-headline); }
+
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+body {
+  font-family: var(--font);
+  background: var(--bg-primary);
+  color: var(--text-body);
+  font-size: 17px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+img { max-width: 100%; display: block; }
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; cursor: pointer; border: none; background: none; }
+
+/* ---------- Layout primitives ---------- */
+.container { max-width: 1280px; margin: 0 auto; padding: 0 80px; }
+.section { padding: 140px 0; }
+.section--surface { background: var(--surface); }
+
+@media (max-width: 1024px) {
+  .container { padding: 0 40px; }
+  .section { padding: 96px 0; }
+}
+@media (max-width: 640px) {
+  .container { padding: 0 24px; }
+  .section { padding: 80px 0; }
+}
+
+/* ---------- Typography ---------- */
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 24px;
+}
+.eyebrow::before {
+  content: '';
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.h1 {
+  font-size: clamp(44px, 5vw, 68px);
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  color: var(--text-headline);
+}
+.h2 {
+  font-size: clamp(34px, 4vw, 48px);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: var(--text-headline);
+}
+.h3 {
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text-headline);
+}
+.body {
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.65;
+  color: var(--text-body);
+}
+.caption {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--text-body);
+}
+.accent-word { color: var(--accent); }
+
+/* ---------- Section heading block (eyebrow → h2 → body rhythm) ---------- */
+.section-head { max-width: 720px; margin-bottom: 64px; }
+.section-head .h2 { margin-bottom: 20px; }
+.section-head .body { max-width: 60ch; }
+
+/* ---------- Buttons ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 28px;
+  border-radius: var(--radius-md);
+  font-size: 16px;
+  font-weight: 600;
+  transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease), border-color 0.3s var(--ease);
+  white-space: nowrap;
+}
+.btn--primary {
+  background: var(--accent);
+  color: var(--text-headline);
+}
+.btn--primary:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-hover);
+}
+.btn--secondary {
+  background: transparent;
+  border: 1.5px solid var(--border-subtle);
+  color: var(--text-headline);
+}
+.btn--secondary:hover {
+  border-color: var(--border-hover);
+  transform: translateY(-4px);
+}
+.btn--sm { padding: 12px 22px; font-size: 14px; }
+.btn--block { width: 100%; justify-content: center; }
+.btn .arrow { transition: transform 0.3s var(--ease); }
+.btn:hover .arrow { transform: translateX(4px); }
+
+/* ---------- Cards ---------- */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+  transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease), border-color 0.3s var(--ease);
+}
+.card:hover {
+  transform: translateY(-8px);
+  box-shadow: var(--shadow-hover);
+  border-color: var(--border-hover);
+}
+
+/* ---------- Icons (monochrome line, no background) ---------- */
+.icon {
+  width: 28px; height: 28px;
+  stroke: var(--text-headline);
+  stroke-width: 1.6;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+}
+.icon-lg { width: 32px; height: 32px; }
+
+/* ---------- Number labels (01. 02. ...) ---------- */
+.num {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text-headline);
+  font-feature-settings: "tnum";
+}
+
+/* ---------- Chips ---------- */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 18px;
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-body);
+  transition: border-color 0.3s var(--ease), color 0.3s var(--ease);
+}
+.chip:hover { border-color: var(--border-hover); color: var(--text-headline); }
+
+/* ============================================================
+   Navigation — floating pill, surface, border-subtle
+   ============================================================ */
+.nav {
+  position: fixed;
+  top: 24px; left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  width: calc(100% - 48px);
+  max-width: 1280px;
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: box-shadow 0.3s var(--ease);
+}
+.nav.scrolled { box-shadow: var(--shadow); }
+
+.nav__logo {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-headline);
+}
+.nav__links {
+  display: flex;
+  gap: 32px;
+  list-style: none;
+}
+.nav__links a {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-body);
+  transition: color 0.3s var(--ease);
+}
+.nav__links a:hover { color: var(--text-headline); }
+.nav__actions { display: flex; align-items: center; gap: 16px; }
+.nav__toggle {
+  display: none;
+  width: 40px; height: 40px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-headline);
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 1024px) {
+  .nav__links { display: none; }
+  .nav__toggle { display: inline-flex; }
+  .nav__links.open {
+    display: flex;
+    position: absolute;
+    top: calc(100% + 8px); left: 0; right: 0;
+    flex-direction: column;
+    background: var(--surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    gap: 16px;
+    box-shadow: var(--shadow);
+  }
+}
+
+/* ============================================================
+   Hero — 5:7 editorial split, full-wide, 100vh
+   ============================================================ */
+.hero {
+  min-height: 760px;
+  max-height: 900px;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  padding-top: 120px;
+  position: relative;
+}
+.hero__grid {
+  display: grid;
+  grid-template-columns: 5fr 7fr;
+  gap: 64px;
+  align-items: center;
+  width: 100%;
+}
+.hero__text > * { opacity: 0; transform: translateY(24px); }
+.hero__media { opacity: 0; transform: translateY(32px) scale(0.98); }
+
+.hero__title { margin-bottom: 24px; }
+.hero__desc { max-width: 32ch; margin-bottom: 40px; }
+.hero__ctas { display: flex; gap: 16px; margin-bottom: 48px; flex-wrap: wrap; }
+.hero__trust {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding-top: 32px;
+  border-top: 1px solid var(--border-subtle);
+  flex-wrap: wrap;
+}
+.hero__trust-item {
+  font-size: 14px;
+  color: var(--text-body);
+}
+.hero__trust-item strong {
+  color: var(--text-headline);
+  font-weight: 600;
+}
+
+.hero__media-wrap {
+  position: relative;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  height: 80vh;
+  max-height: 720px;
+  min-height: 480px;
+}
+.hero__media-wrap img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  filter: saturate(0.85) contrast(1.02);
+}
+.hero__media-svg { display: block; width: 100%; height: 100%; }
+.hero__media-svg text { font-family: var(--font); }
+@media (prefers-reduced-motion: no-preference) {
+  .hero__scan { animation: heroScan 3.6s var(--ease) infinite; }
+}
+@keyframes heroScan {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(126px); }
+}
+.hero__chip {
+  position: absolute;
+  bottom: 24px; left: 24px;
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: var(--shadow);
+}
+.hero__chip-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--text-headline);
+}
+.hero__chip-label { font-size: 13px; color: var(--text-body); }
+.hero__chip-value { font-size: 13px; font-weight: 600; color: var(--text-headline); }
+
+.hero__scroll {
+  position: absolute;
+  bottom: 32px; left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-body);
+}
+.hero__scroll-text {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+.hero__scroll-line {
+  width: 1px; height: 32px;
+  background: var(--border-subtle);
+}
+
+@media (max-width: 1024px) {
+  .hero { height: auto; min-height: 0; padding-top: 120px; padding-bottom: 80px; }
+  .hero__grid { grid-template-columns: 1fr; gap: 40px; }
+  .hero__media { order: -1; }
+  .hero__media-wrap { height: 60vh; min-height: 360px; }
+  .hero__scroll { display: none; }
+}
+
+/* ============================================================
+   Problem — 4 cards with 01-04 labels
+   ============================================================ */
+.problem__grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+.problem__card { display: flex; flex-direction: column; gap: 16px; }
+.problem__card .num { margin-bottom: 8px; }
+.problem__card .h3 { margin-bottom: 4px; }
+
+@media (max-width: 1024px) { .problem__grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 640px) { .problem__grid { grid-template-columns: 1fr; } }
+
+/* ============================================================
+   Flow — 7-step horizontal pipeline
+   ============================================================ */
+.flow__steps {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 16px;
+  scrollbar-width: thin;
+}
+.flow__step {
+  flex: 1 1 0;
+  min-width: 160px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 28px;
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease);
+}
+.flow__step:hover { transform: translateY(-8px); box-shadow: var(--shadow-hover); }
+.flow__step-head { display: flex; align-items: center; gap: 12px; }
+.flow__step .icon { width: 24px; height: 24px; }
+.flow__step-title { font-size: 16px; font-weight: 600; color: var(--text-headline); }
+.flow__step-desc { font-size: 14px; color: var(--text-body); line-height: 1.5; }
+.flow__connector {
+  display: flex;
+  align-items: center;
+  color: var(--border-hover);
+  flex-shrink: 0;
+}
+.flow__connector svg { width: 20px; height: 20px; stroke: var(--border-hover); }
+
+@media (max-width: 1024px) {
+  .flow__steps { flex-direction: column; overflow-x: visible; }
+  .flow__connector { display: none; }
+}
+
+/* ============================================================
+   Industries — 5 cards
+   ============================================================ */
+.industries__grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 24px;
+}
+.industries__card { display: flex; flex-direction: column; gap: 20px; }
+.industries__card .h3 { font-size: 18px; }
+.industries__card .body { font-size: 15px; line-height: 1.55; }
+
+@media (max-width: 1024px) { .industries__grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 640px) { .industries__grid { grid-template-columns: 1fr; } }
+
+/* ============================================================
+   Features — 8 cards with line icons
+   ============================================================ */
+.features__grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+.features__card { display: flex; flex-direction: column; gap: 16px; }
+.features__card .icon-wrap { margin-bottom: 8px; }
+.features__card .h3 { font-size: 18px; }
+.features__card .body { font-size: 15px; line-height: 1.55; }
+
+@media (max-width: 1024px) { .features__grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 640px) { .features__grid { grid-template-columns: 1fr; } }
+
+/* ============================================================
+   KPI — 6 metric badges
+   ============================================================ */
+.kpi__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+.kpi__card {
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 40px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease);
+}
+.kpi__card:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); }
+.kpi__value {
+  font-size: clamp(40px, 5vw, 56px);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--text-headline);
+  font-feature-settings: "tnum";
+}
+.kpi__label {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-body);
+}
+.kpi__sub {
+  font-size: 13px;
+  color: var(--text-body);
+  padding-top: 12px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+@media (max-width: 1024px) { .kpi__grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 640px) { .kpi__grid { grid-template-columns: 1fr; } }
+
+/* ============================================================
+   Tech Stack — 6 categories of chips
+   ============================================================ */
+.tech__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+}
+.tech__group { display: flex; flex-direction: column; gap: 16px; }
+.tech__group-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-headline);
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.tech__chips { display: flex; flex-wrap: wrap; gap: 8px; }
+
+@media (max-width: 1024px) { .tech__grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 640px) { .tech__grid { grid-template-columns: 1fr; } }
+
+/* ============================================================
+   ROI — 45% big number
+   ============================================================ */
+.roi {
+  display: grid;
+  grid-template-columns: 5fr 7fr;
+  gap: 64px;
+  align-items: center;
+}
+.roi__number {
+  font-size: clamp(120px, 18vw, 200px);
+  font-weight: 700;
+  line-height: 0.9;
+  letter-spacing: -0.04em;
+  color: var(--text-headline);
+  font-feature-settings: "tnum";
+}
+.roi__number .pct { color: var(--accent); }
+.roi__detail { display: flex; flex-direction: column; gap: 24px; }
+.roi__item {
+  padding: 24px 0;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.roi__item:last-child { border-bottom: 1px solid var(--border-subtle); }
+.roi__item-label { font-size: 14px; color: var(--text-body); }
+.roi__item-value { font-size: 18px; font-weight: 600; color: var(--text-headline); }
+
+@media (max-width: 1024px) {
+  .roi { grid-template-columns: 1fr; gap: 40px; }
+}
+
+/* ============================================================
+   Roadmap — 3 phase cards
+   ============================================================ */
+.roadmap__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+.roadmap__card { display: flex; flex-direction: column; gap: 16px; }
+.roadmap__card .num { margin-bottom: 8px; }
+.roadmap__phase {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-body);
+  padding-top: 16px;
+  border-top: 1px solid var(--border-subtle);
+  margin-top: 8px;
+}
+
+@media (max-width: 1024px) { .roadmap__grid { grid-template-columns: 1fr; } }
+
+/* ============================================================
+   CTA — demo request form
+   ============================================================ */
+.cta__grid {
+  display: grid;
+  grid-template-columns: 5fr 7fr;
+  gap: 64px;
+  align-items: start;
+}
+.cta__copy .h2 { margin-bottom: 20px; }
+.cta__copy .body { margin-bottom: 32px; }
+.cta__contact { display: flex; flex-direction: column; gap: 8px; }
+.cta__contact-label { font-size: 13px; color: var(--text-body); }
+.cta__contact-value { font-size: 17px; font-weight: 600; color: var(--text-headline); }
+
+.form {
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 40px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.form__row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.form__field { display: flex; flex-direction: column; gap: 8px; }
+.form__label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-headline);
+  letter-spacing: 0.02em;
+}
+.form__input, .form__select {
+  background: var(--surface);
+  border: 1.5px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  font-size: 15px;
+  font-family: inherit;
+  color: var(--text-headline);
+  transition: border-color 0.3s var(--ease), box-shadow 0.3s var(--ease);
+  width: 100%;
+}
+.form__input:focus, .form__select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(182,230,58,0.25);
+}
+.form__select { appearance: none; cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%235F5F5F' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 18px center; padding-right: 44px; }
+
+@media (max-width: 640px) { .form__row { grid-template-columns: 1fr; } .form { padding: 28px; } }
+@media (max-width: 1024px) { .cta__grid { grid-template-columns: 1fr; gap: 40px; } }
+
+/* ============================================================
+   Footer
+   ============================================================ */
+.footer {
+  background: var(--surface);
+  border-top: 1px solid var(--border-subtle);
+  padding: 64px 0 40px;
+}
+.footer__grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 48px;
+  margin-bottom: 48px;
+}
+.footer__brand .nav__logo { margin-bottom: 16px; display: inline-block; }
+.footer__brand .body { font-size: 14px; max-width: 32ch; }
+.footer__col-title {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text-headline);
+  margin-bottom: 16px;
+}
+.footer__col ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.footer__col a { font-size: 14px; color: var(--text-body); transition: color 0.3s var(--ease); }
+.footer__col a:hover { color: var(--text-headline); }
+.footer__bottom {
+  padding-top: 32px;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: var(--text-body);
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+@media (max-width: 768px) { .footer__grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 480px) { .footer__grid { grid-template-columns: 1fr; } }
+
+/* ============================================================
+   Toast
+   ============================================================ */
+.toast {
+  position: fixed;
+  bottom: 32px; left: 50%;
+  transform: translateX(-50%) translateY(120%);
+  background: var(--text-headline);
+  color: var(--surface);
+  padding: 16px 28px;
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  font-weight: 500;
+  box-shadow: var(--shadow-hover);
+  transition: transform 0.4s var(--ease);
+  z-index: 200;
+  max-width: calc(100% - 48px);
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ============================================================
+   Reveal animation (scroll-triggered, calm)
+   ============================================================ */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.7s var(--ease), transform 0.7s var(--ease);
+}
+.reveal.visible { opacity: 1; transform: translateY(0); }
+
+/* Hero load animation */
+@keyframes heroFadeUp {
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes heroMediaIn {
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.hero.loaded .hero__text > * { animation: heroFadeUp 0.7s var(--ease) forwards; }
+.hero.loaded .hero__text > *:nth-child(1) { animation-delay: 0.10s; }
+.hero.loaded .hero__text > *:nth-child(2) { animation-delay: 0.20s; }
+.hero.loaded .hero__text > *:nth-child(3) { animation-delay: 0.30s; }
+.hero.loaded .hero__text > *:nth-child(4) { animation-delay: 0.40s; }
+.hero.loaded .hero__text > *:nth-child(5) { animation-delay: 0.50s; }
+.hero.loaded .hero__media { animation: heroMediaIn 0.8s var(--ease) 0.55s forwards; }
+
+/* ---------- Reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .reveal { opacity: 1; transform: none; }
+  .hero__text > *, .hero__media { opacity: 1; transform: none; animation: none; }
+}
+</style>
 </head>
-<body class="antialiased selection:bg-sky-500 selection:text-white">
+<body>
 
-    <nav class="fixed top-0 w-full z-50 glass-panel border-b border-slate-800">
-        <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-                <div class="w-8 h-8 bg-gradient-to-tr from-sky-500 to-indigo-500 rounded-lg flex items-center justify-center font-bold text-white shadow-lg shadow-sky-500/30">CG</div>
-                <span class="font-bold text-xl tracking-wider text-white">CropGuard <span class="gradient-text">V1</span></span>
-            </div>
-            <div class="hidden md:flex space-x-8 text-sm font-medium text-slate-300">
-                <a href="#hero" class="hover:text-sky-400 transition-colors">Home</a>
-                <a href="#prd" class="hover:text-sky-400 transition-colors">PRD</a>
-                <a href="#environment" class="hover:text-sky-400 transition-colors">현장 분석</a>
-                <a href="#architecture" class="hover:text-sky-400 transition-colors">시스템</a>
-            </div>
-        </div>
-    </nav>
+<!-- ==================== Navigation ==================== -->
+<nav class="nav" id="nav">
+  <a href="#" class="nav__logo">GraspFlow</a>
+  <ul class="nav__links" id="navLinks">
+    <li><a href="#problem">문제</a></li>
+    <li><a href="#flow">흐름</a></li>
+    <li><a href="#industries">산업</a></li>
+    <li><a href="#features">기능</a></li>
+    <li><a href="#kpi">성과</a></li>
+    <li><a href="#roadmap">로드맵</a></li>
+  </ul>
+  <div class="nav__actions">
+    <a href="#cta" class="btn btn--primary btn--sm">데모 신청</a>
+    <button class="nav__toggle" id="navToggle" aria-label="메뉴 열기">
+      <svg class="icon" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+  </div>
+</nav>
 
-    <section id="hero" class="pt-32 pb-20 px-6 max-w-7xl mx-auto min-h-screen flex flex-col justify-center">
-        <div class="inline-flex items-center space-x-2 bg-slate-800/80 border border-slate-700 px-3 py-1.5 rounded-full w-fit mb-6">
-            <span class="flex h-2 w-2 rounded-full bg-emerald-400 animate-ping"></span>
-            <span class="text-xs font-semibold text-slate-300">Edge Vision & AI Control System</span>
+<!-- ==================== Hero ==================== -->
+<header class="hero" id="hero">
+  <div class="container">
+    <div class="hero__grid">
+      <div class="hero__text">
+        <div class="eyebrow">AUTONOMOUS PICKING</div>
+        <h1 class="h1 hero__title">바구니 속 비정형까지<br><span class="accent-word">자율 파지</span> Pick &amp; Place</h1>
+        <p class="body hero__desc">GraspNet 6-DOF 파지점 추정으로 비정형·무질서 물체까지 자동 파지합니다. 사이클 4초, 신규 SKU 1시간 티칭으로 생산 유연성을 확보합니다.</p>
+        <div class="hero__ctas">
+          <a href="#cta" class="btn btn--primary">데모 신청 <span class="arrow">→</span></a>
+          <a href="#flow" class="btn btn--secondary">기술 자료 보기</a>
         </div>
-        
-        <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight leading-tight mb-6">
-            시설원예 병해 조기 감지<br>
-            <span class="gradient-text">CropGuard-V1으로 방제 골든타임 확보</span>
-        </h1>
-        <p class="text-slate-400 text-lg md:text-xl max-w-3xl mb-10 leading-relaxed">
-            육안 점검의 한계를 넘어, 24시간 자동 순회 촬영과 AI 분석으로 병해를 조기 감지하고 온실 환경을 능동적으로 제어하여 약제 사용량을 획기적으로 줄입니다.
-        </p>
+        <div class="hero__trust">
+          <div class="hero__trust-item"><strong>97%</strong> 픽 성공률</div>
+          <div class="hero__trust-item"><strong>4초</strong> 사이클 타임</div>
+          <div class="hero__trust-item"><strong>1시간</strong> 신규 SKU 티칭</div>
+        </div>
+      </div>
+      <div class="hero__media">
+        <div class="hero__media-wrap">
+          <svg class="hero__media-svg" viewBox="0 0 900 1100" preserveAspectRatio="xMidYMid slice" role="img" aria-label="로봇팔이 바구니 속 비정형 물체의 6-DOF 파지점을 인식해 집어 올리는 Pick &amp; Place 작업 환경">
+            <defs>
+              <linearGradient id="heroBg" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#FFFFFF"/>
+                <stop offset="1" stop-color="#E6E7E3"/>
+              </linearGradient>
+              <linearGradient id="heroBeam" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#B6E63A" stop-opacity="0.45"/>
+                <stop offset="1" stop-color="#B6E63A" stop-opacity="0"/>
+              </linearGradient>
+              <pattern id="heroGrid" width="60" height="60" patternUnits="userSpaceOnUse">
+                <path d="M60 0H0V60" fill="none" stroke="#1A1A1A" stroke-opacity="0.06" stroke-width="1"/>
+              </pattern>
+              <clipPath id="heroBinClip">
+                <rect x="220" y="712" width="460" height="208" rx="16"/>
+              </clipPath>
+            </defs>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="glass-panel p-6 rounded-2xl border-l-4 border-l-sky-500">
-                <div class="text-slate-400 text-sm mb-1">조기 감지 리드타임</div>
-                <div class="text-3xl font-bold text-white font-mono">3일 <span class="text-xs text-emerald-400 font-normal">선행</span></div>
-                <p class="text-xs text-slate-500 mt-2">육안 인지 시점 대비 골든타임 확보</p>
-            </div>
-            <div class="glass-panel p-6 rounded-2xl border-l-4 border-l-indigo-500">
-                <div class="text-slate-400 text-sm mb-1">약제 사용량 절감</div>
-                <div class="text-3xl font-bold text-white font-mono">30% <span class="text-xs text-indigo-400 font-normal">절감</span></div>
-                <p class="text-xs text-slate-500 mt-2">국소 방제 및 정밀 방제 도입</p>
-            </div>
-            <div class="glass-panel p-6 rounded-2xl border-l-4 border-l-emerald-500">
-                <div class="text-slate-400 text-sm mb-1">순회 점검 시간</div>
-                <div class="text-3xl font-bold text-white font-mono">70% <span class="text-xs text-emerald-400 font-normal">감소</span></div>
-                <p class="text-xs text-slate-500 mt-2">무인 상시 감시로 노동력 절감</p>
-            </div>
-        </div>
-    </section>
+            <rect width="900" height="1100" fill="url(#heroBg)"/>
+            <rect width="900" height="1100" fill="url(#heroGrid)"/>
 
-    <section id="prd" class="py-20 px-6 max-w-7xl mx-auto border-t border-slate-800">
-        <div class="mb-12">
-            <h2 class="text-3xl font-bold mb-3">1. 핵심 PRD 요약</h2>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div class="glass-panel p-6 rounded-xl">
-                <div class="text-sky-400 font-semibold text-sm mb-2">01. 문제 정의</div>
-                <p class="text-slate-300 text-sm leading-relaxed">육안 점검의 노동집약적 한계와 발견 지연으로 인한 병해 확산 문제 해결.</p>
-            </div>
-            <div class="glass-panel p-6 rounded-xl">
-                <div class="text-sky-400 font-semibold text-sm mb-2">02. 핵심 가치</div>
-                <p class="text-slate-300 text-sm leading-relaxed">조기 감지, 무인 상시 감시, 자동 제어 연동, 정밀 방제.</p>
-            </div>
-            <div class="glass-panel p-6 rounded-xl">
-                <div class="text-sky-400 font-semibold text-sm mb-2">03. 성공 지표 (KPI)</div>
-                <ul class="text-slate-300 text-sm space-y-1">
-                    <li>• 분류 정확도: ≥ 92%</li>
-                    <li>• 추론 지연: ≤ 300ms</li>
-                    <li>• 오탐률: ≤ 5%</li>
-                </ul>
-            </div>
-            <div class="glass-panel p-6 rounded-xl">
-                <div class="text-indigo-400 font-semibold text-sm mb-2">04. 기술 스택</div>
-                <p class="text-slate-300 text-sm">Jetson Orin Nano, YOLOv8, ConvNeXt, Modbus TCP, FastAPI, PostgreSQL.</p>
-            </div>
-            <div class="glass-panel p-6 rounded-xl">
-                <div class="text-indigo-400 font-semibold text-sm mb-2">05. 주요 기능</div>
-                <p class="text-slate-300 text-sm">병반 검출, 엽색 분석, 위험 등급 판정, 자동 환경 제어, 안전 인터락.</p>
-            </div>
-            <div class="glass-panel p-6 rounded-xl">
-                <div class="text-indigo-400 font-semibold text-sm mb-2">06. ROI</div>
-                <p class="text-slate-300 text-sm">약 15.5개월 투자 회수 기간, 5년 ROI 287% 예상.</p>
-            </div>
-        </div>
-    </section>
+            <!-- scaled into a crop-safe zone (wrap uses object-fit: cover behaviour) -->
+            <g transform="translate(450 550) scale(0.84) translate(-450 -550)">
 
-    <footer class="py-8 text-center text-xs text-slate-500 border-t border-slate-900">
-        <p>© 2026 CropGuard-V1. All rights reserved.</p>
-    </footer>
+            <!-- frame brackets -->
+            <g fill="none" stroke="#1A1A1A" stroke-opacity="0.22" stroke-width="3" stroke-linecap="square">
+              <path d="M56 122V56h66"/><path d="M844 122V56h-66"/>
+              <path d="M56 978v66h66"/><path d="M844 978v66h-66"/>
+            </g>
+
+            <!-- gantry rail + carriage -->
+            <rect x="110" y="64" width="680" height="24" rx="12" fill="#1A1A1A"/>
+            <rect x="512" y="84" width="136" height="58" rx="18" fill="#1A1A1A"/>
+
+            <!-- arm links -->
+            <g stroke="#1A1A1A" stroke-linecap="round" fill="none">
+              <path d="M580 160L398 352" stroke-width="36"/>
+              <path d="M398 352L462 548" stroke-width="30"/>
+            </g>
+
+            <!-- joints -->
+            <circle cx="580" cy="160" r="28" fill="#FFFFFF" stroke="#1A1A1A" stroke-width="12"/>
+            <circle cx="398" cy="352" r="24" fill="#FFFFFF" stroke="#1A1A1A" stroke-width="11"/>
+            <circle cx="398" cy="352" r="8" fill="#B6E63A"/>
+            <circle cx="462" cy="548" r="19" fill="#FFFFFF" stroke="#1A1A1A" stroke-width="10"/>
+
+            <!-- gripper -->
+            <rect x="412" y="566" width="100" height="44" rx="12" fill="#1A1A1A"/>
+            <rect x="424" y="610" width="18" height="72" rx="7" fill="#1A1A1A"/>
+            <rect x="482" y="610" width="18" height="72" rx="7" fill="#1A1A1A"/>
+            <rect x="424" y="662" width="18" height="20" rx="7" fill="#B6E63A"/>
+            <rect x="482" y="662" width="18" height="20" rx="7" fill="#B6E63A"/>
+
+            <!-- bin shadow -->
+            <ellipse cx="450" cy="958" rx="252" ry="16" fill="#1A1A1A" opacity="0.07"/>
+
+            <!-- bin -->
+            <rect x="196" y="690" width="508" height="252" rx="26" fill="#FFFFFF" stroke="#1A1A1A" stroke-opacity="0.12" stroke-width="2"/>
+            <rect x="220" y="712" width="460" height="208" rx="16" fill="#E6E7E3"/>
+
+            <!-- unstructured objects in bin -->
+            <g clip-path="url(#heroBinClip)" fill="#1A1A1A">
+              <rect x="244" y="778" width="124" height="88" rx="14" opacity="0.18" transform="rotate(-12 306 822)"/>
+              <circle cx="606" cy="836" r="50" opacity="0.13"/>
+              <rect x="516" y="736" width="108" height="72" rx="10" opacity="0.22" transform="rotate(14 570 772)"/>
+              <path d="M244 902l86-22 34 52-92 12z" opacity="0.16"/>
+              <rect x="398" y="726" width="94" height="62" rx="12" opacity="0.11" transform="rotate(-6 445 757)"/>
+              <circle cx="292" cy="742" r="30" opacity="0.15"/>
+              <rect x="392" y="800" width="136" height="92" rx="18" fill="#B6E63A" transform="rotate(-14 460 846)"/>
+            </g>
+
+            <!-- projection beam -->
+            <path d="M428 686h68l92 152H336z" fill="url(#heroBeam)"/>
+
+            <!-- secondary detections -->
+            <g fill="none" stroke="#1A1A1A" stroke-opacity="0.3" stroke-width="2" stroke-dasharray="6 7">
+              <rect x="556" y="786" width="100" height="100" rx="8"/>
+              <rect x="510" y="730" width="120" height="86" rx="8"/>
+            </g>
+
+            <!-- primary grasp target -->
+            <g clip-path="url(#heroBinClip)">
+              <rect class="hero__scan" x="374" y="782" width="176" height="3" rx="1.5" fill="#1A1A1A" opacity="0.35"/>
+            </g>
+            <rect x="374" y="782" width="176" height="132" rx="10" fill="none" stroke="#1A1A1A" stroke-width="3" stroke-dasharray="12 9"/>
+            <path d="M462 828v40M442 848h40" stroke="#1A1A1A" stroke-width="3" stroke-linecap="round"/>
+            <g transform="rotate(-14 462 848)">
+              <rect x="386" y="822" width="14" height="52" rx="6" fill="#1A1A1A"/>
+              <rect x="524" y="822" width="14" height="52" rx="6" fill="#1A1A1A"/>
+            </g>
+
+            <!-- readout pill -->
+            <rect x="374" y="734" width="198" height="36" rx="18" fill="#1A1A1A"/>
+            <text x="392" y="758" fill="#B6E63A" font-size="14" font-weight="600" letter-spacing="1.4">6-DOF GRASP 0.97</text>
+            </g>
+          </svg>
+          <div class="hero__chip">
+            <span class="hero__chip-dot"></span>
+            <span class="hero__chip-label">오늘의 사이클 타임</span>
+            <span class="hero__chip-value">4.0초</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="hero__scroll">
+    <span class="hero__scroll-text">SCROLL</span>
+    <span class="hero__scroll-line"></span>
+  </div>
+</header>
+
+<!-- ==================== Problem ==================== -->
+<section class="section" id="problem">
+  <div class="container">
+    <div class="section-head reveal">
+      <div class="eyebrow">PROBLEM</div>
+      <h2 class="h2">기존 자동화의 <span class="accent-word">한계</span>를 넘습니다</h2>
+      <p class="body">정형 지그에 묶인 기존 자동화는 비정형·무질서 환경과 소량다품종 전환에 대응하지 못합니다. GraspFlow는 이 네 가지 한계를 해결합니다.</p>
+    </div>
+    <div class="problem__grid">
+      <article class="card problem__card reveal">
+        <div class="num">01.</div>
+        <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M12 2a4 4 0 0 0-4 4v4a4 4 0 0 0 8 0V6a4 4 0 0 0-4-4z"/><path d="M6 10v0a6 6 0 0 0 12 0"/><path d="M8 20h8"/><path d="M12 14v6"/></svg>
+        <h3 class="h3">인력 의존 반복 작업</h3>
+        <p class="body">동일 동작을 수천 회 반복하는 픽킹·적재에 인력이 집중 투입되어 피로도·CTD·이직률이 증가합니다.</p>
+      </article>
+      <article class="card problem__card reveal">
+        <div class="num">02.</div>
+        <svg class="icon icon-lg" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+        <h3 class="h3">정형 지그 의존</h3>
+        <p class="body">사전 정의된 위치와 모양의 물체만 취급 가능하며 SKU 증가마다 픽스처·지그 교체 비용이 발생합니다.</p>
+      </article>
+      <article class="card problem__card reveal">
+        <div class="num">03.</div>
+        <svg class="icon icon-lg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+        <h3 class="h3">비정형 대응 불가</h3>
+        <p class="body">무질서하게 담긴 부품, 뒤집힌 물체, 겹쳐진 물체는 기존 비전 시스템으로 파지점을 계산하기 어렵습니다.</p>
+      </article>
+      <article class="card problem__card reveal">
+        <div class="num">04.</div>
+        <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9 9 0 0 1 6.7 3"/><path d="M21 12a9 9 0 0 1-9 9 9 9 0 0 1-6.7-3"/><polyline points="17 4 19 6 17 8"/><polyline points="7 16 5 18 7 20"/></svg>
+        <h3 class="h3">소량다품종 전환 비용</h3>
+        <p class="body">제품 변경 시 티칭·프로그래밍 시간이 길어 중소업체의 자동화 도입 장벽이 됩니다.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== Flow ==================== -->
+<section class="section section--surface" id="flow">
+  <div class="container">
+    <div class="section-head reveal">
+      <div class="eyebrow">CORE FLOW</div>
+      <h2 class="h2">7단계 <span class="accent-word">파이프라인</span></h2>
+      <p class="body">AI 인식에서 검증까지, 비전 기반 자율 파지의 전체 흐름이 한 줄로 연결됩니다.</p>
+    </div>
+    <div class="flow__steps">
+      <div class="flow__step reveal">
+        <div class="flow__step-head"><span class="num">01</span></div>
+        <svg class="icon" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        <div class="flow__step-title">인식</div>
+        <p class="flow__step-desc">RGB-D 카메라 촬영, 물체 탐지·세그멘테이션</p>
+      </div>
+      <div class="flow__connector reveal"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round"><line x1="4" y1="12" x2="20" y2="12"/><polyline points="14 6 20 12 14 18"/></svg></div>
+      <div class="flow__step reveal">
+        <div class="flow__step-head"><span class="num">02</span></div>
+        <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg>
+        <div class="flow__step-title">파지점 추정</div>
+        <p class="flow__step-desc">GraspNet 기반 6-DOF 파지 자세 산출</p>
+      </div>
+      <div class="flow__connector reveal"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round"><line x1="4" y1="12" x2="20" y2="12"/><polyline points="14 6 20 12 14 18"/></svg></div>
+      <div class="flow__step reveal">
+        <div class="flow__step-head"><span class="num">03</span></div>
+        <svg class="icon" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M3 12h18"/><path d="M3 18h12"/></svg>
+        <div class="flow__step-title">파지 계획</div>
+        <p class="flow__step-desc">MoveIt2 충돌 회피 궤적 생성</p>
+      </div>
+      <div class="flow__connector reveal"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round"><line x1="4" y1="12" x2="20" y2="12"/><polyline points="14 6 20 12 14 18"/></svg></div>
+      <div class="flow__step reveal">
+        <div class="flow__step-head"><span class="num">04</span></div>
+        <svg class="icon" viewBox="0 0 24 24"><path d="M18 11V6a2 2 0 0 0-4 0v5"/><path d="M14 10V4a2 2 0 0 0-4 0v6"/><path d="M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-1-5.7-3L4 14"/></svg>
+        <div class="flow__step-title">픽</div>
+        <p class="flow__step-desc">그리퍼 파지, 압력·슬립 감지</p>
+      </div>
+      <div class="flow__connector reveal"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round"><line x1="4" y1="12" x2="20" y2="12"/><polyline points="14 6 20 12 14 18"/></svg></div>
+      <div class="flow__step reveal">
+        <div class="flow__step-head"><span class="num">05</span></div>
+        <svg class="icon" viewBox="0 0 24 24"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><polyline points="15 19 12 22 9 19"/><polyline points="19 9 22 12 19 15"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>
+        <div class="flow__step-title">이동</div>
+        <p class="flow__step-desc">안전 높이, 충돌 회피 경로</p>
+      </div>
+      <div class="flow__connector reveal"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round"><line x1="4" y1="12" x2="20" y2="12"/><polyline points="14 6 20 12 14 18"/></svg></div>
+      <div class="flow__step reveal">
+        <div class="flow__step-head"><span class="num">06</span></div>
+        <svg class="icon" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.3 7 12 12 20.7 7"/><line x1="12" y1="22" x2="12" y2="12"/></svg>
+        <div class="flow__step-title">플레이스</div>
+        <p class="flow__step-desc">pose 보정, 정밀 하강, 파지 해제</p>
+      </div>
+      <div class="flow__connector reveal"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round"><line x1="4" y1="12" x2="20" y2="12"/><polyline points="14 6 20 12 14 18"/></svg></div>
+      <div class="flow__step reveal">
+        <div class="flow__step-head"><span class="num">07</span></div>
+        <svg class="icon" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <div class="flow__step-title">검증</div>
+        <p class="flow__step-desc">잔류 물체 확인, 실패 시 재시도</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== Industries ==================== -->
+<section class="section" id="industries">
+  <div class="container">
+    <div class="section-head reveal">
+      <div class="eyebrow">INDUSTRIES</div>
+      <h2 class="h2">다섯 산업의 <span class="accent-word">현장</span>에 적용</h2>
+      <p class="body">물량·정밀도·위생·유연성, 각 산업이 직면한 과제에 맞춘 파지 자동화를 제공합니다.</p>
+    </div>
+    <div class="industries__grid">
+      <article class="card industries__card reveal">
+        <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M2 20h20"/><path d="M4 20V8l5 3V8l5 3V8l5 3v9"/><path d="M9 20v-5"/><path d="M14 20v-5"/></svg>
+        <h3 class="h3">중소 제조</h3>
+        <p class="body">연간 50만 건 이상 픽킹, SKU 50개+ 다품종 환경에 인력 의존을 줄입니다.</p>
+      </article>
+      <article class="card industries__card reveal">
+        <svg class="icon icon-lg" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+        <h3 class="h3">물류·이커머스</h3>
+        <p class="body">박스 적재, 무질서 더미 해소, 출하량 증가에 따른 인력 부담을 완화합니다.</p>
+      </article>
+      <article class="card industries__card reveal">
+        <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M9 3h6v4l3 3v11a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V10l3-3V3z"/><path d="M9 13h6"/><path d="M9 17h6"/></svg>
+        <h3 class="h3">식음료·제약</h3>
+        <p class="body">위생·이물질 혼입 리스크 관리, 작업자 접촉 최소화로 무인화를 실현합니다.</p>
+      </article>
+      <article class="card industries__card reveal">
+        <svg class="icon icon-lg" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="1"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3"/><path d="M15 1v3"/><path d="M9 20v3"/><path d="M15 20v3"/><path d="M20 9h3"/><path d="M20 14h3"/><path d="M1 9h3"/><path d="M1 14h3"/></svg>
+        <h3 class="h3">전자·정밀부품</h3>
+        <p class="body">±0.1mm 위치결정 정밀도, 미세 부품 취급, 교번 교체 작업의 불량을 줄입니다.</p>
+      </article>
+      <article class="card industries__card reveal">
+        <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M3 21V8l9-5 9 5v13"/><path d="M3 21h18"/><path d="M9 21V12h6v9"/><path d="M12 7v.01"/></svg>
+        <h3 class="h3">창고·물류센터</h3>
+        <p class="body">AGV와 연계해 박스 피킹 후 컨베이어·팔레트 적재로 자동화 라인을 구축합니다.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== Features ==================== -->
+<section class="section section--surface" id="features">
+  <div class="container">
+    <div class="section-head reveal">
+      <div class="eyebrow">FEATURES</div>
+      <h2 class="h2">여덟 가지 <span class="accent-word">핵심 기능</span></h2>
+      <p class="body">캘리브레이션부터 핸드오버, 보안, 오프라인 동작까지 현장에 필요한 요구사항을 갖추었습니다.</p>
+    </div>
+    <div class="features__grid">
+      <article class="card features__card reveal">
+        <div class="icon-wrap"><svg class="icon icon-lg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15 15 0 0 1 0 20"/><path d="M12 2a15 15 0 0 0 0 20"/></svg></div>
+        <h3 class="h3">Hand-Eye Calibration</h3>
+        <p class="body">ChArUco 보드 기반 카메라-로봇 좌표계 정합, 주기적 재캘리브레이션.</p>
+      </article>
+      <article class="card features__card reveal">
+        <div class="icon-wrap"><svg class="icon icon-lg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg></div>
+        <h3 class="h3">GraspNet 파지점 추정</h3>
+        <p class="body">6-DOF 파지 자세 자동 산출, 비정형·무질서 더미 환경 대응.</p>
+      </article>
+      <article class="card features__card reveal">
+        <div class="icon-wrap"><svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>
+        <h3 class="h3">Tool Changer 자동 교체</h3>
+        <p class="body">ISO 9409-1 도킹, 교체 10초 이내, RFID 인식 후 자동 재캘리브레이션.</p>
+      </article>
+      <article class="card features__card reveal">
+        <div class="icon-wrap"><svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
+        <h3 class="h3">Few-shot 티칭</h3>
+        <p class="body">5장 이하 샘플로 신규 SKU 등록, 1시간 이내 운전 개시.</p>
+      </article>
+      <article class="card features__card reveal">
+        <div class="icon-wrap"><svg class="icon icon-lg" viewBox="0 0 24 24"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><polyline points="8 21 3 21 3 16"/><line x1="3" y1="3" x2="20" y2="20"/></svg></div>
+        <h3 class="h3">AGV·컨베이어 핸드오버</h3>
+        <p class="body">VDA 5050, placement_ack 콜백, 잔류 물체 카메라 검증.</p>
+      </article>
+      <article class="card features__card reveal">
+        <div class="icon-wrap"><svg class="icon icon-lg" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="8" rx="1"/><rect x="2" y="14" width="20" height="8" rx="1"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg></div>
+        <h3 class="h3">PLC/SCADA (OPC-UA)</h3>
+        <p class="body">Phase 2 제조 라인 통합, OPC-UA 게이트웨이로 라인 연동.</p>
+      </article>
+      <article class="card features__card reveal">
+        <div class="icon-wrap"><svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <h3 class="h3">RBAC 보안·감사</h3>
+        <p class="body">OAuth2/mTLS, SROS2, 제어 명령 서명, 영상 30일·로그 90일 보관.</p>
+      </article>
+      <article class="card features__card reveal">
+        <div class="icon-wrap"><svg class="icon icon-lg" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+        <h3 class="h3">Edge AI 오프라인</h3>
+        <p class="body">네트워크 단절 시 로컬 추론·제어, 복구 후 백엔드 일괄 동기화.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== KPI ==================== -->
+<section class="section" id="kpi">
+  <div class="container">
+    <div class="section-head reveal">
+      <div class="eyebrow">PERFORMANCE</div>
+      <h2 class="h2">현장에서 증명된 <span class="accent-word">여섯 지표</span></h2>
+      <p class="body">숙련 작업자 대비 성공률·사이클·정밀도·가동률·안정성을 정량 목표로 관리합니다.</p>
+    </div>
+    <div class="kpi__grid">
+      <div class="kpi__card reveal">
+        <div class="kpi__value" data-target="97" data-suffix="%">97%</div>
+        <div class="kpi__label">픽킹 성공률</div>
+        <div class="kpi__sub">숙련 작업자 95% 대비 +2%p</div>
+      </div>
+      <div class="kpi__card reveal">
+        <div class="kpi__value" data-target="4" data-suffix="초">4초</div>
+        <div class="kpi__label">사이클 타임</div>
+        <div class="kpi__sub">기존 6초 대비 33% 단축</div>
+      </div>
+      <div class="kpi__card reveal">
+        <div class="kpi__value">±0.1mm</div>
+        <div class="kpi__label">위치결정 정밀도</div>
+        <div class="kpi__sub">레이저 트래커 기준</div>
+      </div>
+      <div class="kpi__card reveal">
+        <div class="kpi__value" data-target="500" data-suffix="시간">500시간</div>
+        <div class="kpi__label">MTBF</div>
+        <div class="kpi__sub">하드웨어+소프트웨어 통합 장애 기준</div>
+      </div>
+      <div class="kpi__card reveal">
+        <div class="kpi__value" data-target="90" data-suffix="%">90%</div>
+        <div class="kpi__label">가동률</div>
+        <div class="kpi__sub">기존 70% 대비 +20%p</div>
+      </div>
+      <div class="kpi__card reveal">
+        <div class="kpi__value">0.1%</div>
+        <div class="kpi__label">드롭·손상률</div>
+        <div class="kpi__sub">기존 1% 대비 90% 감소</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== Tech Stack ==================== -->
+<section class="section section--surface" id="tech">
+  <div class="container">
+    <div class="section-head reveal">
+      <div class="eyebrow">TECH STACK</div>
+      <h2 class="h2">검증된 <span class="accent-word">오픈소스</span> 스택</h2>
+      <p class="body">산업 표준 로봇·비전·제어 프레임워크를 조합해 검증 가능한 파이프라인을 구성합니다.</p>
+    </div>
+    <div class="tech__grid">
+      <div class="tech__group reveal">
+        <div class="tech__group-title">로봇팔</div>
+        <div class="tech__chips">
+          <span class="chip">UR3e / UR5e</span>
+          <span class="chip">Franka Emika</span>
+          <span class="chip">MyCobot 6DOF/7DOF</span>
+          <span class="chip">2지 / 진공 / 소프트 그리퍼</span>
+        </div>
+      </div>
+      <div class="tech__group reveal">
+        <div class="tech__group-title">비전·파지</div>
+        <div class="tech__chips">
+          <span class="chip">Intel RealSense D435/D455</span>
+          <span class="chip">Azure Kinect</span>
+          <span class="chip">YOLOv8 / Detectron2 / SAM</span>
+          <span class="chip">GraspNet-1Billion / AnyGrasp</span>
+          <span class="chip">FoundationPose / GDRNPP</span>
+        </div>
+      </div>
+      <div class="tech__group reveal">
+        <div class="tech__group-title">로봇 제어</div>
+        <div class="tech__chips">
+          <span class="chip">ROS2 Humble</span>
+          <span class="chip">MoveIt2</span>
+          <span class="chip">SROS2</span>
+          <span class="chip">VDA 5050</span>
+        </div>
+      </div>
+      <div class="tech__group reveal">
+        <div class="tech__group-title">시뮬레이션·RL</div>
+        <div class="tech__chips">
+          <span class="chip">Isaac Sim</span>
+          <span class="chip">Gazebo</span>
+          <span class="chip">Mujoco</span>
+          <span class="chip">Stable-Baselines3 / PPO</span>
+        </div>
+      </div>
+      <div class="tech__group reveal">
+        <div class="tech__group-title">인프라</div>
+        <div class="tech__chips">
+          <span class="chip">NVIDIA Jetson Orin</span>
+          <span class="chip">Python FastAPI</span>
+          <span class="chip">PostgreSQL + Redis</span>
+          <span class="chip">MinIO / S3</span>
+        </div>
+      </div>
+      <div class="tech__group reveal">
+        <div class="tech__group-title">MLOps</div>
+        <div class="tech__chips">
+          <span class="chip">MLflow</span>
+          <span class="chip">DVC</span>
+          <span class="chip">Weights &amp; Biases</span>
+          <span class="chip">Grafana / Metabase</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== ROI ==================== -->
+<section class="section" id="roi">
+  <div class="container">
+    <div class="section-head reveal">
+      <div class="eyebrow">ROI</div>
+      <h2 class="h2">연간 <span class="accent-word">45%</span> 비용 절감</h2>
+    </div>
+    <div class="roi reveal">
+      <div class="roi__number"><span data-target="45">45</span><span class="pct">%</span></div>
+      <div class="roi__detail">
+        <div class="roi__item">
+          <div class="roi__item-label">인건비 절감</div>
+          <div class="roi__item-value">작업자 2~3명 → 시스템 1대</div>
+        </div>
+        <div class="roi__item">
+          <div class="roi__item-label">불량 비용 절감</div>
+          <div class="roi__item-value">드롭률 1% → 0.1% (90% 감소)</div>
+        </div>
+        <div class="roi__item">
+          <div class="roi__item-label">생산 유연성</div>
+          <div class="roi__item-value">신규 SKU 티칭 1작업일(8시간) → 1시간 (87.5% 절감)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== Roadmap ==================== -->
+<section class="section section--surface" id="roadmap">
+  <div class="container">
+    <div class="section-head reveal">
+      <div class="eyebrow">ROADMAP</div>
+      <h2 class="h2">세 단계 <span class="accent-word">출시 계획</span></h2>
+      <p class="body">정형 물체에서 비정형 bin picking, AGV·PLC 연계까지 단계적으로 확장합니다.</p>
+    </div>
+    <div class="roadmap__grid">
+      <article class="card roadmap__card reveal">
+        <div class="num">01.</div>
+        <h3 class="h3">MVP</h3>
+        <p class="body">정형 물체 픽/플레이스, 1종 그리퍼, 단일 작업점. 비전 인식, ROS2 제어, 미션 API, 대시보드.</p>
+        <div class="roadmap__phase">예상 2~3개월</div>
+      </article>
+      <article class="card roadmap__card reveal">
+        <div class="num">02.</div>
+        <h3 class="h3">Phase 1</h3>
+        <p class="body">비정형 bin picking, 다양 그리퍼, few-shot 학습. GraspNet 연동, SKU 자동 등록, 재학습 파이프라인.</p>
+        <div class="roadmap__phase">예상 3~4개월</div>
+      </article>
+      <article class="card roadmap__card reveal">
+        <div class="num">03.</div>
+        <h3 class="h3">Phase 2</h3>
+        <p class="body">AGV/컨베이어 연계, PLC/SCADA(OPC-UA) 통합, 강화학습 Sim2Real, 양팔 협업 검토.</p>
+        <div class="roadmap__phase">예상 3~4개월</div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== CTA ==================== -->
+<section class="section" id="cta">
+  <div class="container">
+    <div class="cta__grid">
+      <div class="cta__copy reveal">
+        <div class="eyebrow">GET STARTED</div>
+        <h2 class="h2">현장에 <span class="accent-word">GraspFlow</span>를 도입</h2>
+        <p class="body">데모 신청 후 현장 물체·사이클 조건에 맞춘 파지 자동화 시나리오를 검증받으세요.</p>
+        <div class="cta__contact">
+          <div class="cta__contact-label">이메일</div>
+          <div class="cta__contact-value">hello@graspflow.io</div>
+        </div>
+      </div>
+      <form class="form reveal" id="demoForm" novalidate>
+        <div class="form__row">
+          <div class="form__field">
+            <label class="form__label" for="f-name">이름</label>
+            <input class="form__input" type="text" id="f-name" name="name" placeholder="홍길동" required>
+          </div>
+          <div class="form__field">
+            <label class="form__label" for="f-company">회사</label>
+            <input class="form__input" type="text" id="f-company" name="company" placeholder="주식회사 예" required>
+          </div>
+        </div>
+        <div class="form__field">
+          <label class="form__label" for="f-email">이메일</label>
+          <input class="form__input" type="email" id="f-email" name="email" placeholder="you@company.com" required>
+        </div>
+        <div class="form__field">
+          <label class="form__label" for="f-industry">산업</label>
+          <select class="form__select" id="f-industry" name="industry" required>
+            <option value="" disabled selected>산업을 선택하세요</option>
+            <option value="manufacturing">중소 제조</option>
+            <option value="logistics">물류·이커머스</option>
+            <option value="food-pharma">식음료·제약</option>
+            <option value="electronics">전자·정밀부품</option>
+            <option value="warehouse">창고·물류센터</option>
+            <option value="other">기타</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn--primary btn--block">데모 신청하기 <span class="arrow">→</span></button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== Footer ==================== -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer__grid">
+      <div class="footer__brand">
+        <a href="#" class="nav__logo">GraspFlow</a>
+        <p class="body">AI 비전과 GraspNet 기반 자율 파지로 비정형·무질서 물체까지 자동화합니다.</p>
+      </div>
+      <div class="footer__col">
+        <div class="footer__col-title">제품</div>
+        <ul>
+          <li><a href="#features">기능</a></li>
+          <li><a href="#kpi">성과</a></li>
+          <li><a href="#tech">기술 스택</a></li>
+          <li><a href="#roadmap">로드맵</a></li>
+        </ul>
+      </div>
+      <div class="footer__col">
+        <div class="footer__col-title">산업</div>
+        <ul>
+          <li><a href="#industries">중소 제조</a></li>
+          <li><a href="#industries">물류·이커머스</a></li>
+          <li><a href="#industries">식음료·제약</a></li>
+          <li><a href="#industries">창고·물류센터</a></li>
+        </ul>
+      </div>
+      <div class="footer__col">
+        <div class="footer__col-title">문의</div>
+        <ul>
+          <li><a href="#cta">데모 신청</a></li>
+          <li><a href="mailto:hello@graspflow.io">hello@graspflow.io</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer__bottom">
+      <span>© 2026 GraspFlow. 모든 권리 보유.</span>
+      <span>AI 비전 기반 로봇팔 Pick &amp; Place 자동화</span>
+    </div>
+  </div>
+</footer>
+
+<!-- ==================== Toast ==================== -->
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  // Nav: scroll shadow + mobile toggle
+  var nav = document.getElementById('nav');
+  var navToggle = document.getElementById('navToggle');
+  var navLinks = document.getElementById('navLinks');
+
+  window.addEventListener('scroll', function () {
+    if (window.scrollY > 8) nav.classList.add('scrolled');
+    else nav.classList.remove('scrolled');
+  }, { passive: true });
+
+  navToggle.addEventListener('click', function () {
+    navLinks.classList.toggle('open');
+  });
+  navLinks.querySelectorAll('a').forEach(function (a) {
+    a.addEventListener('click', function () { navLinks.classList.remove('open'); });
+  });
+
+  // Hero load animation
+  window.addEventListener('load', function () {
+    requestAnimationFrame(function () {
+      document.getElementById('hero').classList.add('loaded');
+    });
+  });
+
+  // Reveal on scroll
+  var reveals = document.querySelectorAll('.reveal');
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          io.unobserve(entry.target);
+        }
+      });
+    }, { rootMargin: '0px 0px -80px 0px', threshold: 0.1 });
+    reveals.forEach(function (el) { io.observe(el); });
+  } else {
+    reveals.forEach(function (el) { el.classList.add('visible'); });
+  }
+
+  // Count-up animation
+  var counters = document.querySelectorAll('[data-target]');
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function animateCount(el) {
+    var target = parseFloat(el.getAttribute('data-target'));
+    var suffix = el.getAttribute('data-suffix') || '';
+    var duration = 1200;
+    var start = null;
+    function step(ts) {
+      if (!start) start = ts;
+      var p = Math.min((ts - start) / duration, 1);
+      var eased = 1 - Math.pow(1 - p, 3);
+      var val = Math.round(target * eased);
+      el.textContent = val + suffix;
+      if (p < 1) requestAnimationFrame(step);
+      else el.textContent = target + suffix;
+    }
+    if (reduceMotion) { el.textContent = target + suffix; return; }
+    requestAnimationFrame(step);
+  }
+
+  if ('IntersectionObserver' in window && !reduceMotion) {
+    var cio = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          animateCount(entry.target);
+          cio.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.4 });
+    counters.forEach(function (el) { cio.observe(el); });
+  } else {
+    counters.forEach(function (el) {
+      var target = el.getAttribute('data-target');
+      var suffix = el.getAttribute('data-suffix') || '';
+      el.textContent = target + suffix;
+    });
+  }
+
+  // Form: validation + toast
+  var form = document.getElementById('demoForm');
+  var toast = document.getElementById('toast');
+  var toastTimer = null;
+
+  function showToast(msg) {
+    toast.textContent = msg;
+    toast.classList.add('show');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toast.classList.remove('show'); }, 3200);
+  }
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var name = form.name.value.trim();
+    var company = form.company.value.trim();
+    var email = form.email.value.trim();
+    var industry = form.industry.value;
+
+    if (!name || !company || !email || !industry) {
+      showToast('모든 항목을 입력해 주세요.');
+      return;
+    }
+    var emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    if (!emailOk) {
+      showToast('올바른 이메일 주소를 입력해 주세요.');
+      return;
+    }
+    showToast('데모 신청이 완료되었습니다. 2영업일 이내 회신드립니다.');
+    form.reset();
+  });
+})();
+</script>
 </body>
 </html>
