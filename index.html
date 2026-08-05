@@ -1,1735 +1,597 @@
 <!DOCTYPE html>
-<html lang="ko">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HarvestFlow — AI 비전 기반 방울토마토 자동 수확 로봇</title>
-<meta name="description" content="숙성도 판별과 파지·절단 결합 6-DOF 포즈 추정으로 방울토마토를 무인 수확. 수확 성공률 85%, 숙성도 판별 정확도 90%, 절단 정밀도 ±2mm.">
-<link rel="preconnect" href="https://cdn.jsdelivr.net">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
-<style>
-/* ============================================================
-   HarvestFlow Design System — Single Source of Truth
-   GDWEB Winner-class editorial. Light warm gray + lime accent.
-   No gradients. No glassmorphism. No neon. No AI slop.
-   ============================================================ */
 
-:root {
-  /* Color tokens — exhaustive, no other colors may ever appear */
-  --bg-primary: #E6E7E3;
-  --surface: #FFFFFF;
-  --accent: #B6E63A;
-  --text-headline: #1A1A1A;
-  --text-body: #5F5F5F;
-  --border-subtle: rgba(26,26,26,0.08);
-  --border-hover: rgba(26,26,26,0.20);
-
-  /* Shape */
-  --radius-lg: 28px;
-  --radius-md: 24px;
-  --radius-pill: 999px;
-
-  /* Depth — single soft shadow only */
-  --shadow: 0px 12px 32px rgba(0,0,0,0.08);
-  --shadow-hover: 0px 16px 40px rgba(0,0,0,0.10);
-
-  /* Motion */
-  --ease: cubic-bezier(0.22, 1, 0.36, 1);
-
-  /* Type */
-  --font: 'Pretendard', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-}
-
-* { box-sizing: border-box; margin: 0; padding: 0; }
-*::selection { background: var(--accent); color: var(--text-headline); }
-
-html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
-body {
-  font-family: var(--font);
-  background: var(--bg-primary);
-  color: var(--text-body);
-  font-size: 17px;
-  line-height: 1.65;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-img { max-width: 100%; display: block; }
-a { color: inherit; text-decoration: none; }
-button { font-family: inherit; cursor: pointer; border: none; background: none; }
-
-/* ---------- Layout primitives ---------- */
-.container { max-width: 1280px; margin: 0 auto; padding: 0 80px; }
-.section { padding: 140px 0; }
-.section--surface { background: var(--surface); }
-
-@media (max-width: 1024px) {
-  .container { padding: 0 40px; }
-  .section { padding: 96px 0; }
-}
-@media (max-width: 640px) {
-  .container { padding: 0 24px; }
-  .section { padding: 80px 0; }
-}
-
-/* ---------- Typography ---------- */
-.eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--accent);
-  margin-bottom: 24px;
-}
-.eyebrow::before {
-  content: '';
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: var(--accent);
-}
-
-.h1 {
-  font-size: clamp(44px, 5vw, 68px);
-  font-weight: 700;
-  line-height: 1.08;
-  letter-spacing: -0.02em;
-  color: var(--text-headline);
-}
-.h2 {
-  font-size: clamp(34px, 4vw, 48px);
-  font-weight: 600;
-  line-height: 1.15;
-  letter-spacing: -0.01em;
-  color: var(--text-headline);
-}
-.h3 {
-  font-size: 22px;
-  font-weight: 600;
-  line-height: 1.3;
-  color: var(--text-headline);
-}
-.body {
-  font-size: 17px;
-  font-weight: 400;
-  line-height: 1.65;
-  color: var(--text-body);
-}
-.caption {
-  font-size: 14px;
-  font-weight: 400;
-  color: var(--text-body);
-}
-.accent-word { color: var(--accent); }
-
-/* ---------- Section heading block (eyebrow → h2 → body rhythm) ---------- */
-.section-head { max-width: 720px; margin-bottom: 64px; }
-.section-head .h2 { margin-bottom: 20px; }
-.section-head .body { max-width: 60ch; }
-
-/* ---------- Buttons ---------- */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 16px 28px;
-  border-radius: var(--radius-md);
-  font-size: 16px;
-  font-weight: 600;
-  transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease), border-color 0.3s var(--ease);
-  white-space: nowrap;
-}
-.btn--primary {
-  background: var(--accent);
-  color: var(--text-headline);
-}
-.btn--primary:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-hover);
-}
-.btn--secondary {
-  background: transparent;
-  border: 1.5px solid var(--border-subtle);
-  color: var(--text-headline);
-}
-.btn--secondary:hover {
-  border-color: var(--border-hover);
-  transform: translateY(-4px);
-}
-.btn--sm { padding: 12px 22px; font-size: 14px; }
-.btn--block { width: 100%; justify-content: center; }
-.btn .arrow { transition: transform 0.3s var(--ease); }
-.btn:hover .arrow { transform: translateX(4px); }
-
-/* ---------- Cards ---------- */
-.card {
-  background: var(--surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  padding: 32px;
-  transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease), border-color 0.3s var(--ease);
-}
-.card:hover {
-  transform: translateY(-8px);
-  box-shadow: var(--shadow-hover);
-  border-color: var(--border-hover);
-}
-
-/* ---------- Icons (monochrome line, no background) ---------- */
-.icon {
-  width: 28px; height: 28px;
-  stroke: var(--text-headline);
-  stroke-width: 1.6;
-  fill: none;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  flex-shrink: 0;
-}
-.icon-lg { width: 32px; height: 32px; }
-
-/* ---------- Number labels (01. 02. ...) ---------- */
-.num {
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  color: var(--text-headline);
-  font-feature-settings: "tnum";
-}
-
-/* ---------- Chips ---------- */
-.chip {
-  display: inline-flex;
-  align-items: center;
-  padding: 10px 18px;
-  border-radius: var(--radius-pill);
-  background: var(--surface);
-  border: 1px solid var(--border-subtle);
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-body);
-  transition: border-color 0.3s var(--ease), color 0.3s var(--ease);
-}
-.chip:hover { border-color: var(--border-hover); color: var(--text-headline); }
-
-/* ============================================================
-   Navigation — floating pill, surface, border-subtle
-   ============================================================ */
-.nav {
-  position: fixed;
-  top: 24px; left: 50%;
-  transform: translateX(-50%);
-  z-index: 100;
-  width: calc(100% - 48px);
-  max-width: 1280px;
-  background: var(--surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  padding: 14px 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  transition: box-shadow 0.3s var(--ease);
-}
-.nav.scrolled { box-shadow: var(--shadow); }
-
-.nav__logo {
-  font-size: 18px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--text-headline);
-}
-.nav__links {
-  display: flex;
-  gap: 32px;
-  list-style: none;
-}
-.nav__links a {
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--text-body);
-  transition: color 0.3s var(--ease);
-}
-.nav__links a:hover { color: var(--text-headline); }
-.nav__actions { display: flex; align-items: center; gap: 16px; }
-.nav__toggle {
-  display: none;
-  width: 40px; height: 40px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-subtle);
-  color: var(--text-headline);
-  align-items: center;
-  justify-content: center;
-}
-
-@media (max-width: 1024px) {
-  .nav__links { display: none; }
-  .nav__toggle { display: inline-flex; }
-  .nav__links.open {
-    display: flex;
-    position: absolute;
-    top: calc(100% + 8px); left: 0; right: 0;
-    flex-direction: column;
-    background: var(--surface);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-md);
-    padding: 20px;
-    gap: 16px;
-    box-shadow: var(--shadow);
-  }
-}
-
-/* ============================================================
-   Hero — 5:7 editorial split, full-wide, 100vh
-   ============================================================ */
-.hero {
-  min-height: 760px;
-  max-height: 900px;
-  height: 100vh;
-  display: flex;
-  align-items: center;
-  padding-top: 120px;
-  position: relative;
-}
-.hero__grid {
-  display: grid;
-  grid-template-columns: 5fr 7fr;
-  gap: 64px;
-  align-items: center;
-  width: 100%;
-}
-.hero__text > * { opacity: 0; transform: translateY(24px); }
-.hero__media { opacity: 0; transform: translateY(32px) scale(0.98); }
-
-.hero__title { margin-bottom: 24px; }
-.hero__desc { max-width: 32ch; margin-bottom: 40px; }
-.hero__ctas { display: flex; gap: 16px; margin-bottom: 48px; flex-wrap: wrap; }
-.hero__trust {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  padding-top: 32px;
-  border-top: 1px solid var(--border-subtle);
-  flex-wrap: wrap;
-}
-.hero__trust-item {
-  font-size: 14px;
-  color: var(--text-body);
-}
-.hero__trust-item strong {
-  color: var(--text-headline);
-  font-weight: 600;
-}
-
-.hero__media-wrap {
-  position: relative;
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  box-shadow: var(--shadow);
-  height: 80vh;
-  max-height: 720px;
-  min-height: 480px;
-}
-.hero__media-wrap img {
-  width: 100%; height: 100%;
-  object-fit: cover;
-  filter: saturate(0.85) contrast(1.02);
-}
-.hero__media-svg { display: block; width: 100%; height: 100%; }
-.hero__media-svg text { font-family: var(--font); }
-@media (prefers-reduced-motion: no-preference) {
-  .hero__scan { animation: heroScan 3.6s var(--ease) infinite; }
-}
-@keyframes heroScan {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(126px); }
-}
-.hero__chip {
-  position: absolute;
-  bottom: 24px; left: 24px;
-  background: var(--surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-pill);
-  padding: 12px 20px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  box-shadow: var(--shadow);
-}
-.hero__chip-dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  background: var(--text-headline);
-}
-.hero__chip-label { font-size: 13px; color: var(--text-body); }
-.hero__chip-value { font-size: 13px; font-weight: 600; color: var(--text-headline); }
-
-.hero__scroll {
-  position: absolute;
-  bottom: 32px; left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  color: var(--text-body);
-}
-.hero__scroll-text {
-  font-size: 11px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  font-weight: 500;
-}
-.hero__scroll-line {
-  width: 1px; height: 32px;
-  background: var(--border-subtle);
-}
-
-@media (max-width: 1024px) {
-  .hero { height: auto; min-height: 0; padding-top: 120px; padding-bottom: 80px; }
-  .hero__grid { grid-template-columns: 1fr; gap: 40px; }
-  .hero__media { order: -1; }
-  .hero__media-wrap { height: 60vh; min-height: 360px; }
-  .hero__scroll { display: none; }
-}
-
-/* ============================================================
-   Problem — 4 cards with 01-04 labels
-   ============================================================ */
-.problem__grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 24px;
-}
-.problem__card { display: flex; flex-direction: column; gap: 16px; }
-.problem__card .num { margin-bottom: 8px; }
-.problem__card .h3 { margin-bottom: 4px; }
-
-@media (max-width: 1024px) { .problem__grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 640px) { .problem__grid { grid-template-columns: 1fr; } }
-
-/* ============================================================
-   Flow — 7-step horizontal pipeline
-   ============================================================ */
-.flow__steps {
-  display: flex;
-  align-items: stretch;
-  gap: 12px;
-  overflow-x: auto;
-  padding-bottom: 16px;
-  scrollbar-width: thin;
-}
-.flow__step {
-  flex: 1 1 0;
-  min-width: 160px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 28px;
-  background: var(--surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease);
-}
-.flow__step:hover { transform: translateY(-8px); box-shadow: var(--shadow-hover); }
-.flow__step-head { display: flex; align-items: center; gap: 12px; }
-.flow__step .icon { width: 24px; height: 24px; }
-.flow__step-title { font-size: 16px; font-weight: 600; color: var(--text-headline); }
-.flow__step-desc { font-size: 14px; color: var(--text-body); line-height: 1.5; }
-.flow__connector {
-  display: flex;
-  align-items: center;
-  color: var(--border-hover);
-  flex-shrink: 0;
-}
-.flow__connector svg { width: 20px; height: 20px; stroke: var(--border-hover); }
-
-@media (max-width: 1024px) {
-  .flow__steps { flex-direction: column; overflow-x: visible; }
-  .flow__connector { display: none; }
-}
-
-/* ============================================================
-   Pipeline — Stage 0 → Stage A (gate) → Stage B
-   ============================================================ */
-.pipeline { display: flex; flex-direction: column; gap: 0; }
-
-.pipeline__stage {
-  background: var(--surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  padding: 32px;
-  transition: box-shadow 0.3s var(--ease), border-color 0.3s var(--ease);
-}
-.pipeline__stage:hover { box-shadow: var(--shadow); border-color: var(--border-hover); }
-.pipeline__stage--gate { border-color: var(--accent); border-width: 2px; }
-
-.pipeline__stage-head {
-  display: flex;
-  align-items: baseline;
-  gap: 14px;
-  flex-wrap: wrap;
-  margin-bottom: 8px;
-}
-.pipeline__stage-tag {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-headline);
-  background: var(--accent);
-  border-radius: var(--radius-pill);
-  padding: 5px 12px;
-  white-space: nowrap;
-}
-.pipeline__stage-title { font-size: 20px; font-weight: 600; color: var(--text-headline); }
-.pipeline__stage-note { font-size: 14px; color: var(--text-body); margin-bottom: 24px; max-width: 68ch; }
-.pipeline__stage-note strong { color: var(--text-headline); font-weight: 600; }
-
-.pipeline__steps {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-.pipeline__step {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  border-radius: var(--radius-pill);
-  background: var(--bg-primary);
-  border: 1px solid var(--border-subtle);
-  font-size: 14px;
-  color: var(--text-headline);
-  font-weight: 500;
-}
-.pipeline__step-num {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--text-body);
-  font-feature-settings: "tnum";
-}
-
-.pipeline__arrow {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  padding: 18px 0;
-  color: var(--text-body);
-}
-.pipeline__arrow-line { width: 1.5px; height: 22px; background: var(--border-hover); }
-.pipeline__arrow-label {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-headline);
-  background: var(--surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-pill);
-  padding: 6px 16px;
-  text-align: center;
-}
-
-.pipeline__branch {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-top: 24px;
-  padding-top: 24px;
-  border-top: 1px solid var(--border-subtle);
-}
-.pipeline__branch-item { display: flex; flex-direction: column; gap: 6px; }
-.pipeline__branch-cond { font-size: 14px; font-weight: 600; color: var(--text-headline); }
-.pipeline__branch-desc { font-size: 14px; color: var(--text-body); line-height: 1.5; }
-
-@media (max-width: 640px) {
-  .pipeline__branch { grid-template-columns: 1fr; }
-  .pipeline__stage { padding: 24px; }
-}
-
-/* Design principles behind the pipeline */
-.principles__grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
-  margin-top: 64px;
-}
-.principles__card { display: flex; flex-direction: column; gap: 14px; }
-.principles__card .h3 { font-size: 18px; }
-.principles__card .body { font-size: 15px; line-height: 1.55; }
-.principles__tag {
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-body);
-}
-
-@media (max-width: 1024px) { .principles__grid { grid-template-columns: 1fr; } }
-
-/* ============================================================
-   Industries — 5 cards
-   ============================================================ */
-.industries__grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 24px;
-}
-.industries__card { display: flex; flex-direction: column; gap: 20px; }
-.industries__card .h3 { font-size: 18px; }
-.industries__card .body { font-size: 15px; line-height: 1.55; }
-
-@media (max-width: 1024px) { .industries__grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 640px) { .industries__grid { grid-template-columns: 1fr; } }
-
-/* ============================================================
-   Features — 8 cards with line icons
-   ============================================================ */
-.features__grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 24px;
-}
-.features__card { display: flex; flex-direction: column; gap: 16px; }
-.features__card .icon-wrap { margin-bottom: 8px; }
-.features__card .h3 { font-size: 18px; }
-.features__card .body { font-size: 15px; line-height: 1.55; }
-
-@media (max-width: 1024px) { .features__grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 640px) { .features__grid { grid-template-columns: 1fr; } }
-
-/* ============================================================
-   KPI — 6 metric badges
-   ============================================================ */
-.kpi__grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
-}
-.kpi__card {
-  background: var(--surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  padding: 40px 32px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease);
-}
-.kpi__card:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); }
-.kpi__value {
-  font-size: clamp(40px, 5vw, 56px);
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: -0.02em;
-  color: var(--text-headline);
-  font-feature-settings: "tnum";
-}
-.kpi__label {
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--text-body);
-}
-.kpi__sub {
-  font-size: 13px;
-  color: var(--text-body);
-  padding-top: 12px;
-  border-top: 1px solid var(--border-subtle);
-}
-
-@media (max-width: 1024px) { .kpi__grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 640px) { .kpi__grid { grid-template-columns: 1fr; } }
-
-/* ============================================================
-   Tech Stack — 6 categories of chips
-   ============================================================ */
-.tech__grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 32px;
-}
-.tech__group { display: flex; flex-direction: column; gap: 16px; }
-.tech__group-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text-headline);
-  padding-bottom: 16px;
-  border-bottom: 1px solid var(--border-subtle);
-}
-.tech__chips { display: flex; flex-wrap: wrap; gap: 8px; }
-
-@media (max-width: 1024px) { .tech__grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 640px) { .tech__grid { grid-template-columns: 1fr; } }
-
-/* ============================================================
-   ROI — big percentage number
-   ============================================================ */
-.roi {
-  display: grid;
-  grid-template-columns: 5fr 7fr;
-  gap: 64px;
-  align-items: center;
-}
-.roi__number {
-  font-size: clamp(120px, 18vw, 200px);
-  font-weight: 700;
-  line-height: 0.9;
-  letter-spacing: -0.04em;
-  color: var(--text-headline);
-  font-feature-settings: "tnum";
-}
-.roi__number .pct { color: var(--accent); }
-.roi__detail { display: flex; flex-direction: column; gap: 24px; }
-.roi__item {
-  padding: 24px 0;
-  border-top: 1px solid var(--border-subtle);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.roi__item:last-child { border-bottom: 1px solid var(--border-subtle); }
-.roi__item-label { font-size: 14px; color: var(--text-body); }
-.roi__item-value { font-size: 18px; font-weight: 600; color: var(--text-headline); }
-
-@media (max-width: 1024px) {
-  .roi { grid-template-columns: 1fr; gap: 40px; }
-}
-
-/* ============================================================
-   Roadmap — 3 phase cards
-   ============================================================ */
-.roadmap__grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
-}
-.roadmap__card { display: flex; flex-direction: column; gap: 16px; }
-.roadmap__card .num { margin-bottom: 8px; }
-.roadmap__phase {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-body);
-  padding-top: 16px;
-  border-top: 1px solid var(--border-subtle);
-  margin-top: 8px;
-}
-
-@media (max-width: 1024px) { .roadmap__grid { grid-template-columns: 1fr; } }
-
-/* ============================================================
-   CTA — demo request form
-   ============================================================ */
-.cta__grid {
-  display: grid;
-  grid-template-columns: 5fr 7fr;
-  gap: 64px;
-  align-items: start;
-}
-.cta__copy .h2 { margin-bottom: 20px; }
-.cta__copy .body { margin-bottom: 32px; }
-.cta__contact { display: flex; flex-direction: column; gap: 8px; }
-.cta__contact-label { font-size: 13px; color: var(--text-body); }
-.cta__contact-value { font-size: 17px; font-weight: 600; color: var(--text-headline); }
-
-.form {
-  background: var(--surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  padding: 40px;
-  box-shadow: var(--shadow);
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-.form__row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.form__field { display: flex; flex-direction: column; gap: 8px; }
-.form__label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-headline);
-  letter-spacing: 0.02em;
-}
-.form__input, .form__select {
-  background: var(--surface);
-  border: 1.5px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  padding: 14px 18px;
-  font-size: 15px;
-  font-family: inherit;
-  color: var(--text-headline);
-  transition: border-color 0.3s var(--ease), box-shadow 0.3s var(--ease);
-  width: 100%;
-}
-.form__input:focus, .form__select:focus {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(182,230,58,0.25);
-}
-.form__select { appearance: none; cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%235F5F5F' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 18px center; padding-right: 44px; }
-
-@media (max-width: 640px) { .form__row { grid-template-columns: 1fr; } .form { padding: 28px; } }
-@media (max-width: 1024px) { .cta__grid { grid-template-columns: 1fr; gap: 40px; } }
-
-/* ============================================================
-   Footer
-   ============================================================ */
-.footer {
-  background: var(--surface);
-  border-top: 1px solid var(--border-subtle);
-  padding: 64px 0 40px;
-}
-.footer__grid {
-  display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr;
-  gap: 48px;
-  margin-bottom: 48px;
-}
-.footer__brand .nav__logo { margin-bottom: 16px; display: inline-block; }
-.footer__brand .body { font-size: 14px; max-width: 32ch; }
-.footer__col-title {
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  color: var(--text-headline);
-  margin-bottom: 16px;
-}
-.footer__col ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
-.footer__col a { font-size: 14px; color: var(--text-body); transition: color 0.3s var(--ease); }
-.footer__col a:hover { color: var(--text-headline); }
-.footer__bottom {
-  padding-top: 32px;
-  border-top: 1px solid var(--border-subtle);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 13px;
-  color: var(--text-body);
-  flex-wrap: wrap;
-  gap: 16px;
-}
-
-@media (max-width: 768px) { .footer__grid { grid-template-columns: 1fr 1fr; } }
-@media (max-width: 480px) { .footer__grid { grid-template-columns: 1fr; } }
-
-/* ============================================================
-   Toast
-   ============================================================ */
-.toast {
-  position: fixed;
-  bottom: 32px; left: 50%;
-  transform: translateX(-50%) translateY(120%);
-  background: var(--text-headline);
-  color: var(--surface);
-  padding: 16px 28px;
-  border-radius: var(--radius-md);
-  font-size: 15px;
-  font-weight: 500;
-  box-shadow: var(--shadow-hover);
-  transition: transform 0.4s var(--ease);
-  z-index: 200;
-  max-width: calc(100% - 48px);
-}
-.toast.show { transform: translateX(-50%) translateY(0); }
-
-/* ============================================================
-   Reveal animation (scroll-triggered, calm)
-   ============================================================ */
-.reveal {
-  opacity: 0;
-  transform: translateY(24px);
-  transition: opacity 0.7s var(--ease), transform 0.7s var(--ease);
-}
-.reveal.visible { opacity: 1; transform: translateY(0); }
-
-/* Hero load animation */
-@keyframes heroFadeUp {
-  to { opacity: 1; transform: translateY(0); }
-}
-@keyframes heroMediaIn {
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-.hero.loaded .hero__text > * { animation: heroFadeUp 0.7s var(--ease) forwards; }
-.hero.loaded .hero__text > *:nth-child(1) { animation-delay: 0.10s; }
-.hero.loaded .hero__text > *:nth-child(2) { animation-delay: 0.20s; }
-.hero.loaded .hero__text > *:nth-child(3) { animation-delay: 0.30s; }
-.hero.loaded .hero__text > *:nth-child(4) { animation-delay: 0.40s; }
-.hero.loaded .hero__text > *:nth-child(5) { animation-delay: 0.50s; }
-.hero.loaded .hero__media { animation: heroMediaIn 0.8s var(--ease) 0.55s forwards; }
-
-/* ---------- Reduced motion ---------- */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-  .reveal { opacity: 1; transform: none; }
-  .hero__text > *, .hero__media { opacity: 1; transform: none; animation: none; }
-}
-</style>
-</head>
-<body>
-
-<!-- ==================== Navigation ==================== -->
-<nav class="nav" id="nav">
-  <a href="#" class="nav__logo">HarvestFlow</a>
-  <ul class="nav__links" id="navLinks">
-    <li><a href="#problem">문제</a></li>
-    <li><a href="#flow">흐름</a></li>
-    <li><a href="#pipeline">전처리</a></li>
-    <li><a href="#features">기능</a></li>
-    <li><a href="#kpi">성과</a></li>
-    <li><a href="#roadmap">로드맵</a></li>
-  </ul>
-  <div class="nav__actions">
-    <a href="#cta" class="btn btn--primary btn--sm">데모 신청</a>
-    <button class="nav__toggle" id="navToggle" aria-label="메뉴 열기">
-      <svg class="icon" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-    </button>
-  </div>
-</nav>
-
-<!-- ==================== Hero ==================== -->
-<header class="hero" id="hero">
-  <div class="container">
-    <div class="hero__grid">
-      <div class="hero__text">
-        <div class="eyebrow">AUTONOMOUS HARVESTING</div>
-        <h1 class="h1 hero__title">잎에 가린 트러스에서<br><span class="accent-word">익은 것만</span> 골라 수확</h1>
-        <p class="body hero__desc">숙성도를 먼저 판별하고, 과실 중심과 꼭지 축으로 단일 6-DOF 접근 포즈를 산출합니다. 꼭지 절단 정밀도 ±2mm로 모주 손상 없이 수확합니다.</p>
-        <div class="hero__ctas">
-          <a href="#cta" class="btn btn--primary">현장 진단 신청 <span class="arrow">→</span></a>
-          <a href="#pipeline" class="btn btn--secondary">전처리 파이프라인 보기</a>
-        </div>
-        <div class="hero__trust">
-          <div class="hero__trust-item"><strong>85%</strong> 수확 성공률</div>
-          <div class="hero__trust-item"><strong>90%</strong> 숙성도 판별 정확도</div>
-          <div class="hero__trust-item"><strong>±2mm</strong> 꼭지 절단 정밀도</div>
-        </div>
-      </div>
-      <div class="hero__media">
-        <div class="hero__media-wrap">
-          <svg class="hero__media-svg" viewBox="0 0 900 1100" preserveAspectRatio="xMidYMid slice" role="img" aria-label="하이와이어 온실에서 로봇팔이 방울토마토 트러스의 익은 과실을 인식하고, 꼭지 축에 수직으로 측면 접근해 절단 수확하는 모습. 미숙과는 건너뛰기 대상으로 표시됨">
-            <defs>
-              <linearGradient id="heroBg" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stop-color="#FFFFFF"/>
-                <stop offset="1" stop-color="#E6E7E3"/>
-              </linearGradient>
-              <linearGradient id="heroBeam" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stop-color="#B6E63A" stop-opacity="0.45"/>
-                <stop offset="1" stop-color="#B6E63A" stop-opacity="0"/>
-              </linearGradient>
-              <pattern id="heroGrid" width="60" height="60" patternUnits="userSpaceOnUse">
-                <path d="M60 0H0V60" fill="none" stroke="#1A1A1A" stroke-opacity="0.06" stroke-width="1"/>
-              </pattern>
-              <clipPath id="heroTargetClip">
-                <rect x="356" y="552" width="96" height="96" rx="10"/>
-              </clipPath>
-            </defs>
-
-            <rect width="900" height="1100" fill="url(#heroBg)"/>
-            <rect width="900" height="1100" fill="url(#heroGrid)"/>
-
-            <!-- scaled into a crop-safe zone (wrap uses object-fit: cover behaviour) -->
-            <g transform="translate(450 550) scale(0.84) translate(-450 -550)">
-
-            <!-- frame brackets -->
-            <g fill="none" stroke="#1A1A1A" stroke-opacity="0.22" stroke-width="3" stroke-linecap="square">
-              <path d="M56 122V56h66"/><path d="M844 122V56h-66"/>
-              <path d="M56 978v66h66"/><path d="M844 978v66h-66"/>
-            </g>
-
-            <!-- high-wire support + vertically trained main stem -->
-            <rect x="40" y="88" width="520" height="18" rx="9" fill="#1A1A1A"/>
-            <path d="M250 106C236 300 262 520 246 1000" fill="none" stroke="#1A1A1A" stroke-opacity="0.5" stroke-width="14" stroke-linecap="round"/>
-
-            <!-- truss rachis (화방 주축) -->
-            <path d="M252 468C310 500 348 548 378 610C400 660 402 730 384 800" fill="none" stroke="#1A1A1A" stroke-opacity="0.42" stroke-width="9" stroke-linecap="round"/>
-
-            <!-- pedicels (개별 과실 자루) -->
-            <g stroke="#1A1A1A" stroke-opacity="0.42" stroke-width="6" stroke-linecap="round">
-              <path d="M272 482L232 500"/>
-              <path d="M330 532L376 574"/>
-              <path d="M366 586L320 614"/>
-              <path d="M390 672L446 694"/>
-              <path d="M390 752L342 776"/>
-            </g>
-
-            <!-- fruits — fill opacity encodes ripeness (짙을수록 완숙) -->
-            <g fill="#1A1A1A">
-              <circle cx="208" cy="520" r="28" opacity="0.10"/>
-              <circle cx="404" cy="600" r="36" opacity="0.30"/>
-              <circle cx="292" cy="640" r="31" opacity="0.12"/>
-              <circle cx="472" cy="716" r="33" opacity="0.27"/>
-              <circle cx="316" cy="800" r="28" opacity="0.11"/>
-            </g>
-
-            <!-- mobile platform: ground rail + vertical lift axis -->
-            <rect x="556" y="1000" width="344" height="18" rx="9" fill="#1A1A1A"/>
-            <rect x="790" y="140" width="22" height="856" rx="11" fill="#1A1A1A"/>
-            <g stroke="#B6E63A" stroke-width="4" stroke-linecap="round" fill="none">
-              <path d="M770 372l14-16 14 16"/>
-              <path d="M770 500l14 16 14-16"/>
-            </g>
-            <rect x="768" y="400" width="66" height="66" rx="16" fill="#1A1A1A"/>
-
-            <!-- arm links -->
-            <g stroke="#1A1A1A" stroke-linecap="round" fill="none">
-              <path d="M801 433L620 470" stroke-width="32"/>
-              <path d="M620 470L461 539" stroke-width="26"/>
-            </g>
-            <circle cx="801" cy="433" r="24" fill="#FFFFFF" stroke="#1A1A1A" stroke-width="11"/>
-            <circle cx="620" cy="470" r="21" fill="#FFFFFF" stroke="#1A1A1A" stroke-width="10"/>
-            <circle cx="620" cy="470" r="7" fill="#B6E63A"/>
-
-            <!-- wrist camera cone (근접 정밀 촬영) -->
-            <path d="M448 524l30 30-52 96-62-40z" fill="url(#heroBeam)"/>
-
-            <!-- pre-grasp approach path — perpendicular to the pedicel axis (측면 접근) -->
-            <g stroke="#1A1A1A" stroke-opacity="0.45" stroke-width="3" stroke-linecap="round" fill="none" stroke-dasharray="10 8">
-              <path d="M492 504L416 587"/>
-            </g>
-            <path d="M416 587l16-4-4 16z" fill="#1A1A1A" opacity="0.55"/>
-            <circle cx="492" cy="504" r="7" fill="none" stroke="#1A1A1A" stroke-opacity="0.5" stroke-width="3"/>
-
-            <!-- end-effector: soft gripper embracing the fruit, oriented to the approach axis -->
-            <g transform="rotate(133 404 600)">
-              <rect x="300" y="572" width="42" height="56" rx="12" fill="#1A1A1A"/>
-              <rect x="342" y="580" width="26" height="40" rx="8" fill="#1A1A1A"/>
-              <rect x="352" y="548" width="66" height="13" rx="6" fill="#1A1A1A"/>
-              <rect x="404" y="548" width="14" height="13" rx="6" fill="#B6E63A"/>
-              <rect x="352" y="639" width="38" height="13" rx="6" fill="#1A1A1A"/>
-              <rect x="376" y="639" width="14" height="13" rx="6" fill="#B6E63A"/>
-            </g>
-
-            <!-- cut marker on the pedicel: derived from the fixed hardware offset -->
-            <g stroke="#1A1A1A" stroke-width="3.5" stroke-linecap="round">
-              <path d="M361 562l28 22"/>
-              <path d="M361 584l28-22"/>
-            </g>
-            <circle cx="375" cy="573" r="6" fill="#B6E63A"/>
-
-            <!-- primary target detection + scan sweep -->
-            <g clip-path="url(#heroTargetClip)">
-              <rect class="hero__scan" x="356" y="556" width="96" height="3" rx="1.5" fill="#1A1A1A" opacity="0.35"/>
-            </g>
-            <rect x="356" y="552" width="96" height="96" rx="10" fill="none" stroke="#1A1A1A" stroke-width="3" stroke-dasharray="12 9"/>
-
-            <!-- secondary detections: unripe fruits are recorded for the next pass -->
-            <g fill="none" stroke="#1A1A1A" stroke-opacity="0.28" stroke-width="2" stroke-dasharray="6 7">
-              <rect x="176" y="488" width="64" height="64" rx="8"/>
-              <rect x="256" y="604" width="72" height="72" rx="8"/>
-              <rect x="284" y="768" width="64" height="64" rx="8"/>
-              <rect x="436" y="680" width="72" height="72" rx="8"/>
-            </g>
-
-            <!-- HUD readouts -->
-            <rect x="60" y="150" width="266" height="40" rx="20" fill="#1A1A1A"/>
-            <text x="80" y="176" fill="#B6E63A" font-size="14" font-weight="600" letter-spacing="1.3">RIPE 0.94 · CUT ±2mm</text>
-            <rect x="60" y="204" width="214" height="34" rx="17" fill="#FFFFFF" stroke="#1A1A1A" stroke-opacity="0.16" stroke-width="2"/>
-            <text x="78" y="226" fill="#5F5F5F" font-size="13" font-weight="500" letter-spacing="1.1">SKIP · 미숙 3과</text>
-            </g>
-          </svg>
-          <div class="hero__chip">
-            <span class="hero__chip-dot"></span>
-            <span class="hero__chip-label">이번 트러스 수확 대상</span>
-            <span class="hero__chip-value">2 / 5과</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="hero__scroll">
-    <span class="hero__scroll-text">SCROLL</span>
-    <span class="hero__scroll-line"></span>
-  </div>
-</header>
-
-<!-- ==================== Problem ==================== -->
-<section class="section" id="problem">
-  <div class="container">
-    <div class="section-head reveal">
-      <div class="eyebrow">PROBLEM</div>
-      <h2 class="h2">수확은 왜 아직 <span class="accent-word">사람 손</span>에 남아 있나</h2>
-      <p class="body">방울토마토 수확은 살아있는 개체를 다루는 일입니다. 개체마다 크기·색·경도가 다르고, 잎에 가려 보이지 않으며, 조금만 세게 잡아도 상품가치가 사라집니다.</p>
-    </div>
-    <div class="problem__grid">
-      <article class="card problem__card reveal">
-        <div class="num">01.</div>
-        <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M12 2a4 4 0 0 0-4 4v4a4 4 0 0 0 8 0V6a4 4 0 0 0-4-4z"/><path d="M6 10v0a6 6 0 0 0 12 0"/><path d="M8 20h8"/><path d="M12 14v6"/></svg>
-        <h3 class="h3">반복 수확의 인력난</h3>
-        <p class="body">트러스당 10~30과를 허리를 굽힌 자세로 반복 수확해 요통·근골격계 질환이 누적되고, 수확철 인력 수급이 불안합니다.</p>
-      </article>
-      <article class="card problem__card reveal">
-        <div class="num">02.</div>
-        <svg class="icon icon-lg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none" opacity="0.18"/><path d="M12 3v18"/></svg>
-        <h3 class="h3">숙성도 판단의 개인차</h3>
-        <p class="body">작업자마다 기준이 달라 미숙과·과숙과가 혼입되고, 선별 단계 재작업과 등급 하락으로 이어집니다.</p>
-      </article>
-      <article class="card problem__card reveal">
-        <div class="num">03.</div>
-        <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M12 21c-4-3-7-6.5-7-10a7 7 0 0 1 14 0c0 3.5-3 7-7 10z" opacity="0.9"/><path d="M4 8c3.5 1.5 6 4 8 8"/></svg>
-        <h3 class="h3">잎·줄기에 의한 상시 가림</h3>
-        <p class="body">과실이 트러스 단위로 군집을 이루고 잎에 부분·완전히 가려져, 2D 비전으로는 개별 과실의 3차원 위치를 잡을 수 없습니다.</p>
-      </article>
-      <article class="card problem__card reveal">
-        <div class="num">04.</div>
-        <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M6 4l4 5"/><path d="M18 4l-4 5"/><circle cx="12" cy="15" r="5"/><path d="M9.5 11.5l5 7"/></svg>
-        <h3 class="h3">손상 없는 절단의 난이도</h3>
-        <p class="body">표피가 얇아 그리퍼 압력이 조금만 과해도 멍이 생기고, 꼭지 절단 위치가 어긋나면 다음 수확에 영향을 주는 모주까지 손상됩니다.</p>
-      </article>
-    </div>
-  </div>
-</section>
-
-<!-- ==================== Flow ==================== -->
-<section class="section section--surface" id="flow">
-  <div class="container">
-    <div class="section-head reveal">
-      <div class="eyebrow">CORE FLOW</div>
-      <h2 class="h2">한 과실이 지나는 <span class="accent-word">여덟 단계</span></h2>
-      <p class="body">트러스 촬영부터 등급별 적재, 재순회 기록까지. 익지 않은 과실은 중간에 걸러져 다음 순회 대상으로 남습니다.</p>
-    </div>
-    <div class="flow__steps">
-      <div class="flow__step reveal">
-        <div class="flow__step-head"><span class="num">01</span></div>
-        <svg class="icon" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-        <div class="flow__step-title">촬영·숙성 판별</div>
-        <p class="flow__step-desc">RGB-D·다분광 촬영, 과실별 숙성 단계 분류</p>
-      </div>
-      <div class="flow__connector reveal"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round"><line x1="4" y1="12" x2="20" y2="12"/><polyline points="14 6 20 12 14 18"/></svg></div>
-      <div class="flow__step reveal">
-        <div class="flow__step-head"><span class="num">02</span></div>
-        <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="14" r="6"/><path d="M12 8V3"/><path d="M12 3l4-1"/></svg>
-        <div class="flow__step-title">결합 포즈 추정</div>
-        <p class="flow__step-desc">과실 중심 + 꼭지 축으로 단일 6-DOF 산출</p>
-      </div>
-      <div class="flow__connector reveal"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round"><line x1="4" y1="12" x2="20" y2="12"/><polyline points="14 6 20 12 14 18"/></svg></div>
-      <div class="flow__step reveal">
-        <div class="flow__step-head"><span class="num">03</span></div>
-        <svg class="icon" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M3 12h18"/><path d="M3 18h12"/></svg>
-        <div class="flow__step-title">회피 궤적</div>
-        <p class="flow__step-desc">MoveIt2로 잎·줄기·인접 과실 회피 경로 생성</p>
-      </div>
-      <div class="flow__connector reveal"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round"><line x1="4" y1="12" x2="20" y2="12"/><polyline points="14 6 20 12 14 18"/></svg></div>
-      <div class="flow__step reveal">
-        <div class="flow__step-head"><span class="num">04</span></div>
-        <svg class="icon" viewBox="0 0 24 24"><path d="M6 8v8a6 6 0 0 0 12 0V8"/><path d="M6 12h12"/><path d="M9 4v4"/><path d="M15 4v4"/></svg>
-        <div class="flow__step-title">압력 제어 파지</div>
-        <p class="flow__step-desc">소프트 그리퍼 접근, 슬립 센서로 grip force 조절</p>
-      </div>
-      <div class="flow__connector reveal"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round"><line x1="4" y1="12" x2="20" y2="12"/><polyline points="14 6 20 12 14 18"/></svg></div>
-      <div class="flow__step reveal">
-        <div class="flow__step-head"><span class="num">05</span></div>
-        <svg class="icon" viewBox="0 0 24 24"><path d="M6 4l12 12"/><path d="M18 4L6 16"/><circle cx="6" cy="19" r="2.5"/><circle cx="18" cy="19" r="2.5"/></svg>
-        <div class="flow__step-title">꼭지 절단</div>
-        <p class="flow__step-desc">동일 접근축에서 절단, 실패 시 비틀어 따기</p>
-      </div>
-      <div class="flow__connector reveal"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round"><line x1="4" y1="12" x2="20" y2="12"/><polyline points="14 6 20 12 14 18"/></svg></div>
-      <div class="flow__step reveal">
-        <div class="flow__step-head"><span class="num">06</span></div>
-        <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M3 13h18"/><path d="M9 8V5h6v3"/></svg>
-        <div class="flow__step-title">검사·등급 적재</div>
-        <p class="flow__step-desc">손상 확인 후 숙성 등급·크기별 트레이 분류</p>
-      </div>
-      <div class="flow__connector reveal"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round"><line x1="4" y1="12" x2="20" y2="12"/><polyline points="14 6 20 12 14 18"/></svg></div>
-      <div class="flow__step reveal">
-        <div class="flow__step-head"><span class="num">07</span></div>
-        <svg class="icon" viewBox="0 0 24 24"><path d="M2 18h20"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/><path d="M12 16V6"/><path d="M8 9l4-4 4 4"/></svg>
-        <div class="flow__step-title">구간 이동</div>
-        <p class="flow__step-desc">레일·리프트 축으로 다음 트러스 구간 이동</p>
-      </div>
-      <div class="flow__connector reveal"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round"><line x1="4" y1="12" x2="20" y2="12"/><polyline points="14 6 20 12 14 18"/></svg></div>
-      <div class="flow__step reveal">
-        <div class="flow__step-head"><span class="num">08</span></div>
-        <svg class="icon" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7"/><polyline points="21 3 21 9 15 9"/><circle cx="12" cy="12" r="2.5"/></svg>
-        <div class="flow__step-title">재순회 기록</div>
-        <p class="flow__step-desc">미수확 과실 위치·숙성 예상 시점 저장</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ==================== Preprocessing Pipeline ==================== -->
-<section class="section" id="pipeline">
-  <div class="container">
-    <div class="section-head reveal">
-      <div class="eyebrow">PREPROCESSING</div>
-      <h2 class="h2">숙성도 게이트를 <span class="accent-word">먼저</span> 통과해야 합니다</h2>
-      <p class="body">공통 전처리로 색과 깊이를 정규화한 뒤, 숙성도 판별을 통과한 과실만 파지 계획으로 넘깁니다. 익지 않은 과실에 파지 궤적을 계산하는 것은 Edge 하드웨어 연산의 순수한 낭비이기 때문입니다.</p>
-    </div>
-
-    <div class="pipeline">
-      <!-- Stage 0 -->
-      <div class="pipeline__stage reveal">
-        <div class="pipeline__stage-head">
-          <span class="pipeline__stage-tag">Stage 0</span>
-          <span class="pipeline__stage-title">공통 전처리</span>
-        </div>
-        <p class="pipeline__stage-note">숙성도 판별과 파지 계획이 <strong>함께 쓰는</strong> 선행 단계입니다. 인스턴스 세그멘테이션을 이 단계 끝에 두어, 두 트랙이 동일한 과실 마스크를 근거로 판단하게 합니다.</p>
-        <div class="pipeline__steps">
-          <span class="pipeline__step"><span class="pipeline__step-num">01</span> 센서 시간·좌표 동기화</span>
-          <span class="pipeline__step"><span class="pipeline__step-num">02</span> 선형 색상 캘리브레이션</span>
-          <span class="pipeline__step"><span class="pipeline__step-num">03</span> 정반사 하이라이트 억제</span>
-          <span class="pipeline__step"><span class="pipeline__step-num">04</span> 그림자 제거</span>
-          <span class="pipeline__step"><span class="pipeline__step-num">05</span> Depth 결측 보간·노이즈 제거</span>
-          <span class="pipeline__step"><span class="pipeline__step-num">06</span> 온실 구조물 마스킹</span>
-          <span class="pipeline__step"><span class="pipeline__step-num">07</span> 포인트클라우드 경량화</span>
-          <span class="pipeline__step"><span class="pipeline__step-num">08</span> 인스턴스 세그멘테이션</span>
-        </div>
-      </div>
-
-      <div class="pipeline__arrow reveal">
-        <span class="pipeline__arrow-line"></span>
-        <span class="pipeline__arrow-label">정규화된 RGB-D + 과실·꼭지 마스크</span>
-        <span class="pipeline__arrow-line"></span>
-      </div>
-
-      <!-- Stage A — the gate -->
-      <div class="pipeline__stage pipeline__stage--gate reveal">
-        <div class="pipeline__stage-head">
-          <span class="pipeline__stage-tag">Stage A</span>
-          <span class="pipeline__stage-title">숙성도 판별 게이트</span>
-        </div>
-        <p class="pipeline__stage-note">과실 표면을 여러 부위로 나눠 각각 판정한 뒤 종합합니다. 얼룩덜룩하게 발색하는 품종은 평균색 하나로는 오판별이 잦고, 좌우로 발색이 다른 과실은 상하 분할만으로는 놓치기 때문입니다.</p>
-        <div class="pipeline__steps">
-          <span class="pipeline__step"><span class="pipeline__step-num">01</span> HSV·Lab 색공간 변환</span>
-          <span class="pipeline__step"><span class="pipeline__step-num">02</span> 품종별 색상 기준 적용</span>
-          <span class="pipeline__step"><span class="pipeline__step-num">03</span> 다분광 반사율 지표</span>
-          <span class="pipeline__step"><span class="pipeline__step-num">04</span> 부위별 다중 패치 샘플링</span>
-          <span class="pipeline__step"><span class="pipeline__step-num">05</span> 열과·변색·기형과 예외 필터</span>
-        </div>
-        <div class="pipeline__branch">
-          <div class="pipeline__branch-item">
-            <span class="pipeline__branch-cond">통과 — 신뢰도 90% 이상 &amp; 라이트레드~레드</span>
-            <span class="pipeline__branch-desc">수확 대상으로 확정하고 Stage B로 진행합니다.</span>
-          </div>
-          <div class="pipeline__branch-item">
-            <span class="pipeline__branch-cond">미달 — 재촬영 최대 2회</span>
-            <span class="pipeline__branch-desc">그래도 미달이면 건너뛰고 차기 순회 대상으로 기록합니다. 열과·기형과는 폐기·가공 트레이로 분리합니다.</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="pipeline__arrow reveal">
-        <span class="pipeline__arrow-line"></span>
-        <span class="pipeline__arrow-label">통과한 과실만</span>
-        <span class="pipeline__arrow-line"></span>
-      </div>
-
-      <!-- Stage B -->
-      <div class="pipeline__stage reveal">
-        <div class="pipeline__stage-head">
-          <span class="pipeline__stage-tag">Stage B</span>
-          <span class="pipeline__stage-title">파지·절단 결합 포즈</span>
-        </div>
-        <p class="pipeline__stage-note">추정하는 값은 <strong>과실 중심</strong>과 <strong>꼭지 축</strong> 두 가지뿐입니다. 그리퍼와 절단날은 하나의 강체이므로 둘 사이 거리는 하드웨어 상수이고, 절단 위치는 계산으로 유도됩니다.</p>
-        <div class="pipeline__steps">
-          <span class="pipeline__step"><span class="pipeline__step-num">01</span> 과실 크기 기준 ROI 확정</span>
-          <span class="pipeline__step"><span class="pipeline__step-num">02</span> 구 피팅으로 과실 중심 추정</span>
-          <span class="pipeline__step"><span class="pipeline__step-num">03</span> 꼭지 축 키포인트 회귀</span>
-          <span class="pipeline__step"><span class="pipeline__step-num">04</span> 고정 오프셋 적용 → 단일 6-DOF</span>
-          <span class="pipeline__step"><span class="pipeline__step-num">05</span> 가림 비율 검사</span>
-          <span class="pipeline__step"><span class="pipeline__step-num">06</span> 근접 정밀 2단 촬영</span>
-          <span class="pipeline__step"><span class="pipeline__step-num">07</span> 충돌 회피 접근포즈 필터링</span>
-          <span class="pipeline__step"><span class="pipeline__step-num">08</span> MoveIt2 궤적 생성</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Design principles -->
-    <div class="principles__grid">
-      <article class="card principles__card reveal">
-        <div class="principles__tag">Principle 01</div>
-        <h3 class="h3">색상 보정은 색을 지켜야 합니다</h3>
-        <p class="body">숙성도는 절대 색상값으로 판정하므로, 대비를 국소적으로 늘리는 보정(CLAHE)은 판정 기준 자체를 무너뜨립니다. 숙성도 트랙에는 색을 보존하는 선형 보정만 적용하고, 대비 강화는 형상 처리 트랙에만 씁니다.</p>
-      </article>
-      <article class="card principles__card reveal">
-        <div class="principles__tag">Principle 02</div>
-        <h3 class="h3">복원한 형상은 충돌 판단에 쓰지 않습니다</h3>
-        <p class="body">가려진 부분을 딥러닝으로 채우는 기법은 관측되지 않은 형상을 추측합니다. 그 결과를 충돌맵에 넣으면 실제로는 없는 공간을 있다고 착각해 충돌할 수 있어, 참고용으로만 사용합니다.</p>
-      </article>
-      <article class="card principles__card reveal">
-        <div class="principles__tag">Principle 03</div>
-        <h3 class="h3">정밀도는 광학으로 확보합니다</h3>
-        <p class="body">초해상도 같은 생성 기법은 없던 디테일을 만들어내므로 계측 근거가 될 수 없습니다. 꼭지 절단 ±2mm는 광역 스캔으로 대상을 확정한 뒤 근접 정밀 카메라로 다시 촬영해 확보합니다.</p>
-      </article>
-    </div>
-  </div>
-</section>
-
-<!-- ==================== Industries ==================== -->
-<section class="section section--surface" id="industries">
-  <div class="container">
-    <div class="section-head reveal">
-      <div class="eyebrow">WHO IT IS FOR</div>
-      <h2 class="h2">다섯 유형의 <span class="accent-word">현장</span>에 적용</h2>
-      <p class="body">수확 인력, 등급 편차, 설비 연동, 성과 검증. 각자가 안고 있는 과제에 맞춰 도입 시나리오를 설계합니다.</p>
-    </div>
-    <div class="industries__grid">
-      <article class="card industries__card reveal">
-        <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M3 21V11l9-6 9 6v10"/><path d="M3 21h18"/><path d="M8 21v-6h8v6"/><path d="M12 5V2"/></svg>
-        <h3 class="h3">스마트팜 운영자</h3>
-        <p class="body">수확철 인력 수급이 불안하고 재배면적 확대로 인건비가 급증하는 온실에 무인 순회 수확을 제공합니다.</p>
-      </article>
-      <article class="card industries__card reveal">
-        <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M2 20h20"/><path d="M5 20V9"/><path d="M12 20V5"/><path d="M19 20v-8"/><circle cx="5" cy="7" r="2"/><circle cx="12" cy="3.5" r="2"/><circle cx="19" cy="10" r="2"/></svg>
-        <h3 class="h3">대규모 재배 법인</h3>
-        <p class="body">다수 온실을 동시 운영하며 표준화된 수확 품질이 필요한 조직에 판정 기준 통일과 수확량 예측을 지원합니다.</p>
-      </article>
-      <article class="card industries__card reveal">
-        <svg class="icon icon-lg" viewBox="0 0 24 24"><rect x="3" y="9" width="18" height="11" rx="2"/><path d="M3 14h18"/><path d="M8 9V6h8v3"/><path d="M12 17h.01"/></svg>
-        <h3 class="h3">선별·유통 사업자</h3>
-        <p class="body">수확 단계부터 숙성 등급·크기별로 분리 적재해 입고 후 선별 공정을 단축하고 손상과 반품을 줄입니다.</p>
-      </article>
-      <article class="card industries__card reveal">
-        <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M12 3v3"/><circle cx="12" cy="12" r="3"/><path d="M12 18v3"/><path d="M4.9 4.9l2.1 2.1"/><path d="M17 17l2.1 2.1"/><path d="M3 12h3"/><path d="M18 12h3"/><path d="M4.9 19.1L7 17"/><path d="M17 7l2.1-2.1"/></svg>
-        <h3 class="h3">온실 자동화 엔지니어</h3>
-        <p class="body">기존 관수·온습도 IoT 인프라와 연동하고, 레일·AMR 이동 설비를 포함한 통합 운용 체계를 구성합니다.</p>
-      </article>
-      <article class="card industries__card reveal">
-        <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M3 3v18h18"/><polyline points="7 15 11 10 15 13 20 6"/><circle cx="11" cy="10" r="1.2" fill="currentColor" stroke="none"/></svg>
-        <h3 class="h3">농업 R&amp;D·정책</h3>
-        <p class="body">자동화 표준 모델 발굴과 정책자금 성과 검증에 필요한 정량 데이터와 확산 근거를 축적합니다.</p>
-      </article>
-    </div>
-  </div>
-</section>
-
-<!-- ==================== Features ==================== -->
-<section class="section" id="features">
-  <div class="container">
-    <div class="section-head reveal">
-      <div class="eyebrow">FEATURES</div>
-      <h2 class="h2">여덟 가지 <span class="accent-word">핵심 기능</span></h2>
-      <p class="body">숙성도 판별과 정밀 절단부터 위생 관리, 오프라인 동작, 협동로봇 안전까지 온실 현장에 필요한 요구사항을 갖추었습니다.</p>
-    </div>
-    <div class="features__grid">
-      <article class="card features__card reveal">
-        <div class="icon-wrap"><svg class="icon icon-lg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none" opacity="0.16"/><path d="M12 3v18"/><path d="M3 12h18"/></svg></div>
-        <h3 class="h3">숙성도 6단계 판별</h3>
-        <p class="body">표준 6단계 분류로 라이트레드~레드만 수확하고, 과숙과는 수확 대상에서 자동 배제합니다.</p>
-      </article>
-      <article class="card features__card reveal">
-        <div class="icon-wrap"><svg class="icon icon-lg" viewBox="0 0 24 24"><circle cx="12" cy="15" r="6"/><path d="M12 9V3"/><path d="M12 3l4-1"/><path d="M6 11l12 8" stroke-dasharray="3 3"/></svg></div>
-        <h3 class="h3">파지·절단 결합 포즈</h3>
-        <p class="body">과실 중심과 꼭지 축으로 단일 6-DOF 접근 포즈를 산출하고, 절단 위치는 하드웨어 오프셋으로 유도합니다.</p>
-      </article>
-      <article class="card features__card reveal">
-        <div class="icon-wrap"><svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M6 4l12 12"/><path d="M18 4L6 16"/><circle cx="6" cy="19" r="2.5"/><circle cx="18" cy="19" r="2.5"/></svg></div>
-        <h3 class="h3">저손상 절단·재시도</h3>
-        <p class="body">압력·슬립 센서로 grip force를 실시간 조절하고, 절단 실패 시 비틀어 따기로 대체합니다.</p>
-      </article>
-      <article class="card features__card reveal">
-        <div class="icon-wrap"><svg class="icon icon-lg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15 15 0 0 1 0 20"/><path d="M12 2a15 15 0 0 0 0 20"/></svg></div>
-        <h3 class="h3">Hand-Eye Calibration</h3>
-        <p class="body">카메라-로봇 좌표계 정합, 레일 이동·수직 리프트 축에 따른 구간별 오프셋 자동 보정.</p>
-      </article>
-      <article class="card features__card reveal">
-        <div class="icon-wrap"><svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M4 7v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7"/><path d="M9 7V5h6v2"/><path d="M10 12h4"/></svg></div>
-        <h3 class="h3">등급별 트레이 적재</h3>
-        <p class="body">숙성 등급·크기 기준 자동 분류 적재, 손상·열과·기형과는 폐기·가공용으로 분리합니다.</p>
-      </article>
-      <article class="card features__card reveal">
-        <div class="icon-wrap"><svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M12 2v6"/><path d="M9 5l3-3 3 3"/><circle cx="12" cy="13" r="4"/><path d="M6 21c0-3 2.7-5 6-5s6 2 6 5"/></svg></div>
-        <h3 class="h3">절단날 위생 관리</h3>
-        <p class="body">트러스 전환마다 절단부를 소독해 칼날을 통한 식물 병원체 전파를 차단하고, 마모·오염을 감지합니다.</p>
-      </article>
-      <article class="card features__card reveal">
-        <div class="icon-wrap"><svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7"/><polyline points="21 3 21 9 15 9"/><path d="M12 8v4l3 2"/></svg></div>
-        <h3 class="h3">재순회 스케줄링</h3>
-        <p class="body">미탐지·미숙 과실의 위치와 숙성 예상 시점을 기록해 2~3일 주기 순회 계획에 반영합니다.</p>
-      </article>
-      <article class="card features__card reveal">
-        <div class="icon-wrap"><svg class="icon icon-lg" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
-        <h3 class="h3">Edge AI 오프라인</h3>
-        <p class="body">네트워크 단절 시 Edge에서 추론·제어를 수행하고, 복구 후 백엔드로 일괄 동기화합니다.</p>
-      </article>
-    </div>
-  </div>
-</section>
-
-<!-- ==================== KPI ==================== -->
-<section class="section section--surface" id="kpi">
-  <div class="container">
-    <div class="section-head reveal">
-      <div class="eyebrow">PERFORMANCE</div>
-      <h2 class="h2">과장하지 않은 <span class="accent-word">여섯 목표</span></h2>
-      <p class="body">사람이 더 빠른 항목은 빠르다고 하지 않습니다. 로봇의 가치는 개별 동작 속도가 아니라 판정 일관성과 연속 가동에 있습니다.</p>
-    </div>
-    <div class="kpi__grid">
-      <div class="kpi__card reveal">
-        <div class="kpi__value" data-target="85" data-suffix="%">85%</div>
-        <div class="kpi__label">수확 성공률</div>
-        <div class="kpi__sub">파지·절단 시도 대비. 인식 실패분은 미탐지율로 별도 집계</div>
-      </div>
-      <div class="kpi__card reveal">
-        <div class="kpi__value" data-target="90" data-suffix="%">90%</div>
-        <div class="kpi__label">숙성도 판별 정확도</div>
-        <div class="kpi__sub">인접 단계 경계에서는 숙련 인력 간 일치도(85~90%)가 상한선</div>
-      </div>
-      <div class="kpi__card reveal">
-        <div class="kpi__value">±2mm</div>
-        <div class="kpi__label">꼭지 절단 정밀도</div>
-        <div class="kpi__sub">잔류 꼭지 길이 캘리퍼 표본계측으로 검증</div>
-      </div>
-      <div class="kpi__card reveal">
-        <div class="kpi__value" data-target="5" data-suffix="%">5%</div>
-        <div class="kpi__label">과실 손상률 이하</div>
-        <div class="kpi__sub">숙련 작업자 3% — 초기에는 사람보다 높다. Phase 2 목표 3%</div>
-      </div>
-      <div class="kpi__card reveal">
-        <div class="kpi__value" data-target="15" data-suffix="초">15초</div>
-        <div class="kpi__label">과실당 사이클타임 이하</div>
-        <div class="kpi__sub">숙련 작업자 3~4초. 연속 가동 시간으로 총량을 확보한다</div>
-      </div>
-      <div class="kpi__card reveal">
-        <div class="kpi__value" data-target="90" data-suffix="%">90%</div>
-        <div class="kpi__label">설비 가동률</div>
-        <div class="kpi__sub">MTBF 150시간·MTTR 8시간 기준으로 산출</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ==================== Tech Stack ==================== -->
-<section class="section" id="tech">
-  <div class="container">
-    <div class="section-head reveal">
-      <div class="eyebrow">TECH STACK</div>
-      <h2 class="h2">작물에 맞춰 <span class="accent-word">고른</span> 스택</h2>
-      <p class="body">산업 부품용으로 설계된 모델을 그대로 쓰지 않습니다. 지름 15~30mm 구형 과실에는 경량 기하 추정이 더 정확하고 Edge 연산에도 유리합니다.</p>
-    </div>
-    <div class="tech__grid">
-      <div class="tech__group reveal">
-        <div class="tech__group-title">로봇·엔드이펙터</div>
-        <div class="tech__chips">
-          <span class="chip">Doosan A0509 (리치 914mm)</span>
-          <span class="chip">Techman TM12</span>
-          <span class="chip">레일 캐리지 + 수직 리프트 축</span>
-          <span class="chip">소프트 그리퍼 + 가위 절단 모듈</span>
-          <span class="chip">정전용량 압력·촉각 센서</span>
-        </div>
-      </div>
-      <div class="tech__group reveal">
-        <div class="tech__group-title">비전 센서</div>
-        <div class="tech__chips">
-          <span class="chip">RealSense D435i (광역 스캔)</span>
-          <span class="chip">RealSense D405 (근접 정밀)</span>
-          <span class="chip">고해상도 산업용 컬러</span>
-          <span class="chip">다분광 카메라 (보조)</span>
-        </div>
-      </div>
-      <div class="tech__group reveal">
-        <div class="tech__group-title">인식·포즈 추정</div>
-        <div class="tech__chips">
-          <span class="chip">YOLOv8-seg</span>
-          <span class="chip">FastSAM / EfficientSAM</span>
-          <span class="chip">ResNet / EfficientNet 숙성 분류</span>
-          <span class="chip">구 피팅 + 꼭지 축 키포인트 회귀</span>
-          <span class="chip">GraspNet / AnyGrasp (비교군)</span>
-        </div>
-      </div>
-      <div class="tech__group reveal">
-        <div class="tech__group-title">로봇 제어·시뮬</div>
-        <div class="tech__chips">
-          <span class="chip">ROS2 Humble</span>
-          <span class="chip">MoveIt2</span>
-          <span class="chip">NVIDIA Isaac Sim</span>
-          <span class="chip">Blender 절차적 식물 생성</span>
-          <span class="chip">Domain Randomization</span>
-        </div>
-      </div>
-      <div class="tech__group reveal">
-        <div class="tech__group-title">인프라</div>
-        <div class="tech__chips">
-          <span class="chip">Jetson Orin NX (IP65)</span>
-          <span class="chip">Python FastAPI</span>
-          <span class="chip">PostgreSQL + Redis</span>
-          <span class="chip">MinIO / S3</span>
-          <span class="chip">온습도·조도 IoT 연동</span>
-        </div>
-      </div>
-      <div class="tech__group reveal">
-        <div class="tech__group-title">MLOps·모니터링</div>
-        <div class="tech__chips">
-          <span class="chip">MLflow</span>
-          <span class="chip">DVC</span>
-          <span class="chip">Weights &amp; Biases</span>
-          <span class="chip">React + Three.js 대시보드</span>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ==================== ROI ==================== -->
-<section class="section section--surface" id="roi">
-  <div class="container">
-    <div class="section-head reveal">
-      <div class="eyebrow">ROI</div>
-      <h2 class="h2">수확 인력 <span class="accent-word">80%</span> 감축</h2>
-      <p class="body">라인당 수확 인력 2.5명을 감독·유지보수 0.5명 이내로 줄이는 것이 1차 목표입니다.</p>
-    </div>
-    <div class="roi reveal">
-      <div class="roi__number"><span data-target="80">80</span><span class="pct">%</span></div>
-      <div class="roi__detail">
-        <div class="roi__item">
-          <div class="roi__item-label">수확 인력 감축</div>
-          <div class="roi__item-value">라인당 2.5명 → 0.5명 이내 (감독·유지보수)</div>
-        </div>
-        <div class="roi__item">
-          <div class="roi__item-label">선별 공정 단축</div>
-          <div class="roi__item-value">수확 단계에서 숙성 등급·크기별 사전 분류 완료</div>
-        </div>
-        <div class="roi__item">
-          <div class="roi__item-label">수확 타이밍 로스 감소</div>
-          <div class="roi__item-value">Phase 2 야간 조명 도입 시 20시간 연속 순회</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ==================== Roadmap ==================== -->
-<section class="section" id="roadmap">
-  <div class="container">
-    <div class="section-head reveal">
-      <div class="eyebrow">ROADMAP</div>
-      <h2 class="h2">세 단계 <span class="accent-word">출시 계획</span></h2>
-      <p class="body">전용 엔드이펙터 제작 리드타임과 작물 생육기에 종속되는 데이터 수집 일정을 반영했습니다.</p>
-    </div>
-    <div class="roadmap__grid">
-      <article class="card roadmap__card reveal">
-        <div class="num">01.</div>
-        <h3 class="h3">MVP</h3>
-        <p class="body">꼭지 절단점 라벨링 툴과 오프라인 데이터셋 구축, Isaac Sim 사전 검증, 커스텀 엔드이펙터 시제품 제작. 단일 레일 구간에서 실물 시험 수확.</p>
-        <div class="roadmap__phase">예상 4~6개월</div>
-      </article>
-      <article class="card roadmap__card reveal">
-        <div class="num">02.</div>
-        <h3 class="h3">Phase 1</h3>
-        <p class="body">잎 가림 등 비정형 클러스터 대응, 결합 포즈 정밀도 ±2mm 고도화, 숙성 6단계 등급별 자동 분류 적재, 실패 데이터 수집 파이프라인.</p>
-        <div class="roadmap__phase">예상 4~6개월</div>
-      </article>
-      <article class="card roadmap__card reveal">
-        <div class="num">03.</div>
-        <h3 class="h3">Phase 2</h3>
-        <p class="body">다중 레일·온실 구역 확장, 야간 조명 자동화 기반 연속 운영, 초분광 당도 추정 PoC, 트러스 단위 일괄 수확 대안 검토.</p>
-        <div class="roadmap__phase">예상 4~6개월</div>
-      </article>
-    </div>
-  </div>
-</section>
-
-<!-- ==================== CTA ==================== -->
-<section class="section section--surface" id="cta">
-  <div class="container">
-    <div class="cta__grid">
-      <div class="cta__copy reveal">
-        <div class="eyebrow">GET STARTED</div>
-        <h2 class="h2">온실 조건부터 <span class="accent-word">진단</span>합니다</h2>
-        <p class="body">품종·전정 수준·조도 변동·통로 폭 같은 현장 조건이 전처리 임계값을 결정합니다. 현장 조사 체크리스트를 함께 작성하고 도입 가능성을 검토해 드립니다.</p>
-        <div class="cta__contact">
-          <div class="cta__contact-label">이메일</div>
-          <div class="cta__contact-value">hello@harvestflow.io</div>
-        </div>
-      </div>
-      <form class="form reveal" id="demoForm" novalidate>
-        <div class="form__row">
-          <div class="form__field">
-            <label class="form__label" for="f-name">이름</label>
-            <input class="form__input" type="text" id="f-name" name="name" placeholder="홍길동" required>
-          </div>
-          <div class="form__field">
-            <label class="form__label" for="f-company">회사</label>
-            <input class="form__input" type="text" id="f-company" name="company" placeholder="주식회사 예" required>
-          </div>
-        </div>
-        <div class="form__field">
-          <label class="form__label" for="f-email">이메일</label>
-          <input class="form__input" type="email" id="f-email" name="email" placeholder="you@company.com" required>
-        </div>
-        <div class="form__field">
-          <label class="form__label" for="f-industry">구분</label>
-          <select class="form__select" id="f-industry" name="industry" required>
-            <option value="" disabled selected>해당하는 구분을 선택하세요</option>
-            <option value="smartfarm">스마트팜·시설원예 운영</option>
-            <option value="corporate-farm">대규모 재배 법인</option>
-            <option value="distribution">농산물 선별·유통</option>
-            <option value="engineering">온실 자동화 엔지니어링</option>
-            <option value="research">농업 R&amp;D·정책</option>
-            <option value="other">기타</option>
-          </select>
-        </div>
-        <button type="submit" class="btn btn--primary btn--block">현장 진단 신청하기 <span class="arrow">→</span></button>
-      </form>
-    </div>
-  </div>
-</section>
-
-<!-- ==================== Footer ==================== -->
-<footer class="footer">
-  <div class="container">
-    <div class="footer__grid">
-      <div class="footer__brand">
-        <a href="#" class="nav__logo">HarvestFlow</a>
-        <p class="body">숙성도 판별과 파지·절단 결합 포즈 추정으로 방울토마토를 손상 없이 무인 수확합니다.</p>
-      </div>
-      <div class="footer__col">
-        <div class="footer__col-title">제품</div>
-        <ul>
-          <li><a href="#pipeline">전처리 파이프라인</a></li>
-          <li><a href="#features">기능</a></li>
-          <li><a href="#kpi">성과 지표</a></li>
-          <li><a href="#tech">기술 스택</a></li>
-          <li><a href="#roadmap">로드맵</a></li>
-        </ul>
-      </div>
-      <div class="footer__col">
-        <div class="footer__col-title">대상</div>
-        <ul>
-          <li><a href="#industries">스마트팜 운영자</a></li>
-          <li><a href="#industries">대규모 재배 법인</a></li>
-          <li><a href="#industries">선별·유통 사업자</a></li>
-          <li><a href="#industries">온실 자동화 엔지니어</a></li>
-        </ul>
-      </div>
-      <div class="footer__col">
-        <div class="footer__col-title">문의</div>
-        <ul>
-          <li><a href="#cta">현장 진단 신청</a></li>
-          <li><a href="mailto:hello@harvestflow.io">hello@harvestflow.io</a></li>
-        </ul>
-      </div>
-    </div>
-    <div class="footer__bottom">
-      <span>© 2026 HarvestFlow. 모든 권리 보유.</span>
-      <span>AI 비전 기반 방울토마토 자동 수확 로봇</span>
-    </div>
-  </div>
-</footer>
-
-<!-- ==================== Toast ==================== -->
-<div class="toast" id="toast" role="status" aria-live="polite"></div>
-
-<script>
-(function () {
-  'use strict';
-
-  // Nav: scroll shadow + mobile toggle
-  var nav = document.getElementById('nav');
-  var navToggle = document.getElementById('navToggle');
-  var navLinks = document.getElementById('navLinks');
-
-  window.addEventListener('scroll', function () {
-    if (window.scrollY > 8) nav.classList.add('scrolled');
-    else nav.classList.remove('scrolled');
-  }, { passive: true });
-
-  navToggle.addEventListener('click', function () {
-    navLinks.classList.toggle('open');
-  });
-  navLinks.querySelectorAll('a').forEach(function (a) {
-    a.addEventListener('click', function () { navLinks.classList.remove('open'); });
-  });
-
-  // Hero load animation
-  window.addEventListener('load', function () {
-    requestAnimationFrame(function () {
-      document.getElementById('hero').classList.add('loaded');
-    });
-  });
-
-  // Reveal on scroll
-  var reveals = document.querySelectorAll('.reveal');
-  if ('IntersectionObserver' in window) {
-    var io = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('visible');
-          io.unobserve(entry.target);
+<html class="light" lang="ko"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AGRI-FLOW - Precision Agriculture</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+                "error-container": "#ffdad6",
+                "outline": "#747878",
+                "error": "#ba1a1a",
+                "on-background": "#1a1c1a",
+                "secondary-fixed": "#c2f347",
+                "border-subtle": "rgba(26,26,26,0.08)",
+                "surface-bright": "#f9faf6",
+                "tertiary-fixed-dim": "#c7c6c6",
+                "surface-tint": "#5f5e5e",
+                "surface-container-highest": "#e2e3df",
+                "on-tertiary-fixed-variant": "#464747",
+                "on-tertiary-container": "#848484",
+                "surface-dim": "#d9dad6",
+                "surface-variant": "#e2e3df",
+                "border-hover": "rgba(26,26,26,0.20)",
+                "on-primary-fixed": "#1c1b1b",
+                "on-tertiary": "#ffffff",
+                "on-secondary-fixed": "#151f00",
+                "surface-container-low": "#f3f4f0",
+                "surface-container-lowest": "#ffffff",
+                "outline-variant": "#c4c7c7",
+                "on-primary-container": "#858383",
+                "background": "#f9faf6",
+                "on-primary": "#ffffff",
+                "on-error-container": "#93000a",
+                "inverse-primary": "#c8c6c5",
+                "on-surface-variant": "#444748",
+                "primary": "#000000",
+                "primary-fixed-dim": "#c8c6c5",
+                "on-surface": "#1a1c1a",
+                "on-error": "#ffffff",
+                "surface-container": "#edeeea",
+                "surface-container-high": "#e8e9e4",
+                "on-secondary-container": "#516b00",
+                "secondary-fixed-dim": "#a7d629",
+                "secondary": "#4d6700",
+                "inverse-surface": "#2e312f",
+                "tertiary-container": "#1b1c1c",
+                "inverse-on-surface": "#f0f1ed",
+                "primary-fixed": "#e5e2e1",
+                "tertiary": "#000000",
+                "secondary-container": "#c0f044",
+                "on-secondary": "#ffffff",
+                "primary-container": "#1c1b1b",
+                "surface": "#FFFFFF",
+                "on-secondary-fixed-variant": "#394d00",
+                "tertiary-fixed": "#e4e2e2",
+                "on-tertiary-fixed": "#1b1c1c",
+                "on-primary-fixed-variant": "#474746",
+                "focus-glow": "rgba(182,230,58,0.25)"
+        },
+        "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+        },
+        "spacing": {
+                "gutter-h-desktop": "80px",
+                "base": "8px",
+                "gap-grid": "64px",
+                "section-v-mobile": "80px",
+                "container-max": "1280px",
+                "gap-card": "24px",
+                "section-v-desktop": "140px"
+        },
+        "fontFamily": {
+                "roi-hero": [
+                        "Hanken Grotesk"
+                ],
+                "body-lg": [
+                        "Hanken Grotesk"
+                ],
+                "headline-sm": [
+                        "Hanken Grotesk"
+                ],
+                "body-sm": [
+                        "Hanken Grotesk"
+                ],
+                "headline-lg": [
+                        "Hanken Grotesk"
+                ],
+                "label-caps": [
+                        "Hanken Grotesk"
+                ],
+                "headline-lg-mobile": [
+                        "Hanken Grotesk"
+                ],
+                "numeral-data": [
+                        "Hanken Grotesk"
+                ],
+                "headline-md": [
+                        "Hanken Grotesk"
+                ]
+        },
+        "fontSize": {
+                "roi-hero": [
+                        "200px",
+                        {
+                                "lineHeight": "180px",
+                                "letterSpacing": "-0.04em",
+                                "fontWeight": "700"
+                        }
+                ],
+                "body-lg": [
+                        "17px",
+                        {
+                                "lineHeight": "28px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "headline-sm": [
+                        "22px",
+                        {
+                                "lineHeight": "28px",
+                                "fontWeight": "600"
+                        }
+                ],
+                "body-sm": [
+                        "15px",
+                        {
+                                "lineHeight": "24px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "headline-lg": [
+                        "68px",
+                        {
+                                "lineHeight": "74px",
+                                "letterSpacing": "-0.02em",
+                                "fontWeight": "700"
+                        }
+                ],
+                "label-caps": [
+                        "13px",
+                        {
+                                "lineHeight": "16px",
+                                "letterSpacing": "0.08em",
+                                "fontWeight": "600"
+                        }
+                ],
+                "headline-lg-mobile": [
+                        "44px",
+                        {
+                                "lineHeight": "48px",
+                                "letterSpacing": "-0.02em",
+                                "fontWeight": "700"
+                        }
+                ],
+                "numeral-data": [
+                        "14px",
+                        {
+                                "lineHeight": "18px",
+                                "letterSpacing": "0.04em",
+                                "fontWeight": "600"
+                        }
+                ],
+                "headline-md": [
+                        "48px",
+                        {
+                                "lineHeight": "56px",
+                                "letterSpacing": "-0.01em",
+                                "fontWeight": "600"
+                        }
+                ]
         }
-      });
-    }, { rootMargin: '0px 0px -80px 0px', threshold: 0.1 });
-    reveals.forEach(function (el) { io.observe(el); });
-  } else {
-    reveals.forEach(function (el) { el.classList.add('visible'); });
+},
+    },
   }
-
-  // Count-up animation
-  var counters = document.querySelectorAll('[data-target]');
-  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  function animateCount(el) {
-    var target = parseFloat(el.getAttribute('data-target'));
-    var suffix = el.getAttribute('data-suffix') || '';
-    var duration = 1200;
-    var start = null;
-    function step(ts) {
-      if (!start) start = ts;
-      var p = Math.min((ts - start) / duration, 1);
-      var eased = 1 - Math.pow(1 - p, 3);
-      var val = Math.round(target * eased);
-      el.textContent = val + suffix;
-      if (p < 1) requestAnimationFrame(step);
-      else el.textContent = target + suffix;
-    }
-    if (reduceMotion) { el.textContent = target + suffix; return; }
-    requestAnimationFrame(step);
-  }
-
-  if ('IntersectionObserver' in window && !reduceMotion) {
-    var cio = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) {
-        if (entry.isIntersecting) {
-          animateCount(entry.target);
-          cio.unobserve(entry.target);
-        }
-      });
-    }, { threshold: 0.4 });
-    counters.forEach(function (el) { cio.observe(el); });
-  } else {
-    counters.forEach(function (el) {
-      var target = el.getAttribute('data-target');
-      var suffix = el.getAttribute('data-suffix') || '';
-      el.textContent = target + suffix;
-    });
-  }
-
-  // Form: validation + toast
-  var form = document.getElementById('demoForm');
-  var toast = document.getElementById('toast');
-  var toastTimer = null;
-
-  function showToast(msg) {
-    toast.textContent = msg;
-    toast.classList.add('show');
-    if (toastTimer) clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { toast.classList.remove('show'); }, 3200);
-  }
-
-  form.addEventListener('submit', function (e) {
-    e.preventDefault();
-    var name = form.name.value.trim();
-    var company = form.company.value.trim();
-    var email = form.email.value.trim();
-    var industry = form.industry.value;
-
-    if (!name || !company || !email || !industry) {
-      showToast('모든 항목을 입력해 주세요.');
-      return;
-    }
-    var emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-    if (!emailOk) {
-      showToast('올바른 이메일 주소를 입력해 주세요.');
-      return;
-    }
-    showToast('데모 신청이 완료되었습니다. 2영업일 이내 회신드립니다.');
-    form.reset();
-  });
-})();
 </script>
-</body>
-</html>
+<style>
+        body {
+            background-color: theme('colors.background');
+            color: theme('colors.on-background');
+        }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid theme('colors.border-subtle');
+        }
+        
+        .technical-grid {
+            background-image: 
+                linear-gradient(to right, theme('colors.border-subtle') 1px, transparent 1px),
+                linear-gradient(to bottom, theme('colors.border-subtle') 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+        
+        .gate-highlight {
+            border: 2px solid theme('colors.secondary-container');
+            box-shadow: 0 0 15px theme('colors.focus-glow');
+        }
+        
+        .pulse-scan {
+            animation: heroScan 3.6s infinite ease-in-out;
+        }
+        
+        @keyframes heroScan {
+            0%, 100% { opacity: 0.5; transform: scaleY(1); }
+            50% { opacity: 1; transform: scaleY(1.05); border-color: theme('colors.secondary-container'); }
+        }
+        
+        .stagger-layout > *:nth-child(even) {
+            transform: translateY(40px);
+        }
+        
+        .horizontal-scroll-container::-webkit-scrollbar {
+            display: none;
+        }
+        .horizontal-scroll-container {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="antialiased overflow-x-hidden selection:bg-secondary-container selection:text-on-secondary-container">
+<!-- Top Navigation Bar -->
+<nav class="fixed top-4 left-1/2 -translate-x-1/2 w-[calc(100%-40px)] max-w-container-max rounded-full border border-border-subtle bg-surface/80 dark:bg-surface-container-low/80 backdrop-blur-md z-50 shadow-md">
+<div class="flex justify-between items-center px-8 py-3 w-full">
+<div class="font-headline-sm text-headline-sm font-bold text-primary dark:text-on-primary-fixed">AGRI-FLOW</div>
+<div class="hidden md:flex gap-8 items-center">
+<a class="font-label-caps text-label-caps uppercase tracking-widest text-secondary dark:text-secondary-fixed-dim font-bold border-b-2 border-secondary" href="#tech">Robot Tech</a>
+<a class="font-label-caps text-label-caps uppercase tracking-widest text-on-surface-variant dark:text-outline hover:text-primary transition-colors" href="#flow">Core Flow</a>
+<a class="font-label-caps text-label-caps uppercase tracking-widest text-on-surface-variant dark:text-outline hover:text-primary transition-colors" href="#performance">Performance</a>
+<a class="font-label-caps text-label-caps uppercase tracking-widest text-on-surface-variant dark:text-outline hover:text-primary transition-colors" href="#investors">Investors</a>
+</div>
+<button class="bg-secondary-container text-on-secondary-container font-label-caps text-label-caps uppercase tracking-widest px-6 py-2 rounded-full hover:bg-secondary-fixed transition-colors flex items-center gap-2 group">
+                Request Demo
+                <span class="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</button>
+</div>
+</nav>
+<main class="w-full mx-auto">
+<!-- Hero Section -->
+<section class="max-w-container-max mx-auto relative pt-40 pb-section-v-desktop px-gutter-h-desktop min-h-[921px] flex flex-col justify-center">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gap-grid items-center relative z-10">
+<div class="col-span-1 lg:col-span-6 space-y-8">
+<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-border-subtle bg-surface/50 backdrop-blur font-numeral-data text-numeral-data text-on-surface-variant">
+<span class="w-2 h-2 rounded-full bg-secondary-fixed animate-pulse"></span>
+                        PRECISION HARVESTING SYSTEM
+                    </div>
+<h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface">
+                        잎에 가린 과실 송이에서 <span class="text-secondary">익은 것만</span> 골라 수확.
+                    </h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-lg">
+                        첨단 로보틱스와 비전 AI의 결합으로 온실 환경의 수확 효율을 극대화합니다. 정밀 제어 농업의 새로운 표준.
+                    </p>
+<div class="flex gap-4 pt-4">
+<button class="bg-primary text-on-primary px-8 py-4 rounded-full font-label-caps text-label-caps tracking-widest hover:bg-on-surface transition-colors flex items-center gap-2">
+                            EXPLORE TECH <span class="material-symbols-outlined">analytics</span>
+</button>
+</div>
+</div>
+<div class="col-span-1 lg:col-span-6 relative h-[600px] w-full rounded-[28px] overflow-hidden border border-border-subtle group">
+<img alt="Agricultural Robot" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBaPmL-_CdnT559-PsjTNDMdjdkdcV72bDGvWJU0rodCmif4kC8p3_OD6WN6hV10wXFVlkXl4B80j_34AV9j5ZHGhoMevvG1YKLQMwWoDR_r-DlHF6RhRDU5vKO64R7O5Ks0Z_HM3OIdS6gx_7Jlkym0_6DYB9jVDY0OW9HNOiiX-lo5UuVAGWgQ0zR94VAZNK8QJ3ZqNNmACIipMXdn1Hk1uXYMc4rzmZBJImnxMM2-NNq7Wyf65YGqQ"/>
+<!-- Technical Overlay -->
+<div class="absolute inset-0 pointer-events-none">
+<div class="absolute top-4 left-4 w-4 h-4 border-t-2 border-l-2 border-white/50"></div>
+<div class="absolute top-4 right-4 w-4 h-4 border-t-2 border-r-2 border-white/50"></div>
+<div class="absolute bottom-4 left-4 w-4 h-4 border-b-2 border-l-2 border-white/50"></div>
+<div class="absolute bottom-4 right-4 w-4 h-4 border-b-2 border-r-2 border-white/50"></div>
+<div class="absolute bottom-8 right-8 glass-panel px-4 py-2 rounded-lg flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary-container pulse-scan">center_focus_strong</span>
+<div class="font-numeral-data text-numeral-data text-primary">TARGET LOCK: 98%</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Problem Section -->
+<section class="bg-surface-container py-section-v-desktop px-gutter-h-desktop w-full border-t border-border-subtle" id="problem">
+<div class="max-w-container-max mx-auto">
+<h2 class="font-headline-md text-headline-md text-on-surface mb-12">현재 농업이 직면한 <span class="text-secondary">핵심 과제</span></h2>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gap-card">
+<!-- Card 1 -->
+<div class="bg-surface p-8 rounded-xl border border-border-subtle flex flex-col gap-4 group hover:border-secondary-container transition-colors">
+<span class="font-numeral-data text-numeral-data text-outline">01</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">노동력 부족 심화</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">고령화와 인력 난으로 인해 적기 수확을 위한 필수 노동력 확보가 갈수록 어려워지고 있습니다.</p>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface p-8 rounded-xl border border-border-subtle flex flex-col gap-4 group hover:border-secondary-container transition-colors">
+<span class="font-numeral-data text-numeral-data text-outline">02</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">수확 타이밍 지연</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">작업자 부족은 곧 수확 지연으로 이어지며, 이는 농산물의 신선도 하락과 상품성 저하를 초래합니다.</p>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface p-8 rounded-xl border border-border-subtle flex flex-col gap-4 group hover:border-secondary-container transition-colors">
+<span class="font-numeral-data text-numeral-data text-outline">03</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">인건비 상승</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">매년 급등하는 인건비는 농가의 운영 마진을 심각하게 압박하며 지속 가능성을 위협합니다.</p>
+</div>
+<!-- Card 4 -->
+<div class="bg-surface p-8 rounded-xl border border-border-subtle flex flex-col gap-4 group hover:border-secondary-container transition-colors">
+<span class="font-numeral-data text-numeral-data text-outline">04</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">수확량 예측 불가</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">수작업에 의존하는 기존 방식은 정확한 수확량 예측과 체계적인 데이터 관리가 불가능합니다.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Preprocessing Pipeline Section -->
+<section class="py-section-v-desktop px-gutter-h-desktop w-full border-t border-border-subtle technical-grid" id="pipeline">
+<div class="max-w-container-max mx-auto">
+<h2 class="font-headline-md text-headline-md text-on-surface mb-4">지능형 전처리 파이프라인</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant mb-12">수확 전부터 후처리까지 완벽하게 통합된 자동화 시스템</p>
+<div class="flex flex-col md:flex-row items-center gap-8 justify-between bg-surface-bright p-12 rounded-[28px] border border-border-subtle">
+<div class="flex flex-col items-center gap-4 flex-1 text-center">
+<div class="w-24 h-24 rounded-full bg-surface-container flex items-center justify-center border border-border-subtle">
+<span class="material-symbols-outlined text-4xl text-on-surface">conveyor_belt</span>
+</div>
+<div class="font-headline-sm text-headline-sm">Stage 0</div>
+<div class="font-body-sm text-on-surface-variant">작물 입고 및 3D 스캔 준비</div>
+</div>
+<div class="hidden md:flex flex-col items-center">
+<span class="material-symbols-outlined text-outline">arrow_forward</span>
+</div>
+<div class="flex flex-col items-center gap-4 flex-1 text-center gate-highlight rounded-xl p-6 bg-surface">
+<div class="w-24 h-24 rounded-full bg-secondary-container/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-4xl text-secondary">policy</span>
+</div>
+<div class="font-headline-sm text-headline-sm text-secondary">Stage A (Gate)</div>
+<div class="font-body-sm text-on-surface-variant">AI 비전 기반 실시간 결함 검사 및 필터링</div>
+</div>
+<div class="hidden md:flex flex-col items-center">
+<span class="material-symbols-outlined text-outline">arrow_forward</span>
+</div>
+<div class="flex flex-col items-center gap-4 flex-1 text-center">
+<div class="w-24 h-24 rounded-full bg-surface-container flex items-center justify-center border border-border-subtle">
+<span class="material-symbols-outlined text-4xl text-on-surface">category</span>
+</div>
+<div class="font-headline-sm text-headline-sm">Stage B</div>
+<div class="font-body-sm text-on-surface-variant">정상 품질 분류 및 자동 적재</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Flow Section -->
+<section class="bg-primary text-on-primary py-section-v-desktop w-full overflow-hidden" id="flow">
+<div class="px-gutter-h-desktop max-w-container-max mx-auto mb-12">
+<h2 class="font-headline-md text-headline-md">핵심 수확 프로세스 (8-Step)</h2>
+</div>
+<div class="flex gap-6 px-gutter-h-desktop overflow-x-auto horizontal-scroll-container pb-8 w-full">
+<!-- Step 1 -->
+<div class="min-w-[280px] p-6 border border-on-surface-variant rounded-xl bg-inverse-surface">
+<div class="font-numeral-data text-secondary-fixed mb-4">STEP 01</div>
+<div class="font-headline-sm mb-2">3D 환경 매핑</div>
+<div class="font-body-sm text-outline-variant">LiDAR 센서를 통한 온실 내 이동 경로 및 장애물 실시간 파악</div>
+</div>
+<!-- Step 2 -->
+<div class="min-w-[280px] p-6 border border-on-surface-variant rounded-xl bg-inverse-surface">
+<div class="font-numeral-data text-secondary-fixed mb-4">STEP 02</div>
+<div class="font-headline-sm mb-2">고해상도 비전 스캔</div>
+<div class="font-body-sm text-outline-variant">RGB-D 카메라를 이용한 작물 군집 다각도 스캔 및 데이터 수집</div>
+</div>
+<!-- Step 3 -->
+<div class="min-w-[280px] p-6 border border-on-surface-variant rounded-xl bg-inverse-surface">
+<div class="font-numeral-data text-secondary-fixed mb-4">STEP 03</div>
+<div class="font-headline-sm mb-2">AI 숙도 판별</div>
+<div class="font-body-sm text-outline-variant">머신러닝 알고리즘으로 과실의 색상과 크기를 분석해 수확 적기 판단</div>
+</div>
+<!-- Step 4 -->
+<div class="min-w-[280px] p-6 border border-on-surface-variant rounded-xl bg-inverse-surface">
+<div class="font-numeral-data text-secondary-fixed mb-4">STEP 04</div>
+<div class="font-headline-sm mb-2">좌표 정밀 타겟팅</div>
+<div class="font-body-sm text-outline-variant">선택된 과실의 3D 공간 좌표를 밀리미터 단위로 정확하게 계산</div>
+</div>
+<!-- Step 5 -->
+<div class="min-w-[280px] p-6 border border-on-surface-variant rounded-xl bg-inverse-surface">
+<div class="font-numeral-data text-secondary-fixed mb-4">STEP 05</div>
+<div class="font-headline-sm mb-2">로봇 암 정밀 커팅</div>
+<div class="font-body-sm text-outline-variant">6축 다관절 로봇 암이 주변 가지 손상 없이 줄기만 정확히 절단</div>
+</div>
+<!-- Step 6 -->
+<div class="min-w-[280px] p-6 border border-on-surface-variant rounded-xl bg-inverse-surface">
+<div class="font-numeral-data text-secondary-fixed mb-4">STEP 06</div>
+<div class="font-headline-sm mb-2">소프트 그립 및 회수</div>
+<div class="font-body-sm text-outline-variant">과실 표면에 상처가 나지 않도록 실리콘 소재의 소프트 그리퍼 적용</div>
+</div>
+<!-- Step 7 -->
+<div class="min-w-[280px] p-6 border border-on-surface-variant rounded-xl bg-inverse-surface">
+<div class="font-numeral-data text-secondary-fixed mb-4">STEP 07</div>
+<div class="font-headline-sm mb-2">내부 버퍼 이송</div>
+<div class="font-body-sm text-outline-variant">수확한 과실을 로봇 본체 내부의 안전한 버퍼 저장소로 자동 이송</div>
+</div>
+<!-- Step 8 -->
+<div class="min-w-[280px] p-6 border border-on-surface-variant rounded-xl bg-inverse-surface">
+<div class="font-numeral-data text-secondary-fixed mb-4">STEP 08</div>
+<div class="font-headline-sm mb-2">등급별 자동 분류</div>
+<div class="font-body-sm text-outline-variant">적재함 이동 전 무게와 외관에 따라 A급/B급을 실시간으로 분류</div>
+</div>
+</div>
+</section>
+<!-- Industries Section -->
+<section class="py-section-v-desktop px-gutter-h-desktop w-full border-t border-border-subtle bg-surface">
+<div class="max-w-container-max mx-auto">
+<h2 class="font-headline-md text-headline-md text-on-surface mb-12">적용 가능 산업군</h2>
+<div class="flex flex-wrap gap-4">
+<div class="px-8 py-4 rounded-full border border-border-subtle bg-surface-container-low hover:bg-surface-container transition-colors font-headline-sm text-on-surface">스마트팜 (Smart Farms)</div>
+<div class="px-8 py-4 rounded-full border border-border-subtle bg-surface-container-low hover:bg-surface-container transition-colors font-headline-sm text-on-surface">대규모 온실 (Glasshouses)</div>
+<div class="px-8 py-4 rounded-full border border-border-subtle bg-surface-container-low hover:bg-surface-container transition-colors font-headline-sm text-on-surface">노지 재배 (Open Fields)</div>
+<div class="px-8 py-4 rounded-full border border-border-subtle bg-surface-container-low hover:bg-surface-container transition-colors font-headline-sm text-on-surface">농업 법인 (Agri-Corps)</div>
+<div class="px-8 py-4 rounded-full border border-border-subtle bg-surface-container-low hover:bg-surface-container transition-colors font-headline-sm text-on-surface">농산물 유통 (Distribution)</div>
+</div>
+</div>
+</section>
+<!-- Features Section -->
+<section class="bg-surface-container-low py-section-v-desktop px-gutter-h-desktop w-full border-t border-border-subtle">
+<div class="max-w-container-max mx-auto">
+<h2 class="font-headline-md text-headline-md text-on-surface mb-12">핵심 기능 명세 (Features)</h2>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+<div class="p-6 bg-surface rounded-xl border border-border-subtle flex flex-col gap-4">
+<span class="material-symbols-outlined text-secondary text-3xl">view_in_ar</span>
+<div class="font-headline-sm">3D 비전 매핑</div>
+</div>
+<div class="p-6 bg-surface rounded-xl border border-border-subtle flex flex-col gap-4">
+<span class="material-symbols-outlined text-secondary text-3xl">precision_manufacturing</span>
+<div class="font-headline-sm">정밀 로봇 암</div>
+</div>
+<div class="p-6 bg-surface rounded-xl border border-border-subtle flex flex-col gap-4">
+<span class="material-symbols-outlined text-secondary text-3xl">route</span>
+<div class="font-headline-sm">자율 주행 시스템</div>
+</div>
+<div class="p-6 bg-surface rounded-xl border border-border-subtle flex flex-col gap-4">
+<span class="material-symbols-outlined text-secondary text-3xl">monitor_heart</span>
+<div class="font-headline-sm">실시간 모니터링</div>
+</div>
+<div class="p-6 bg-surface rounded-xl border border-border-subtle flex flex-col gap-4">
+<span class="material-symbols-outlined text-secondary text-3xl">psychology</span>
+<div class="font-headline-sm">AI 숙도 분석</div>
+</div>
+<div class="p-6 bg-surface rounded-xl border border-border-subtle flex flex-col gap-4">
+<span class="material-symbols-outlined text-secondary text-3xl">mode_night</span>
+<div class="font-headline-sm">야간 수확 모드</div>
+</div>
+<div class="p-6 bg-surface rounded-xl border border-border-subtle flex flex-col gap-4">
+<span class="material-symbols-outlined text-secondary text-3xl">battery_charging_full</span>
+<div class="font-headline-sm">배터리 최적화</div>
+</div>
+<div class="p-6 bg-surface rounded-xl border border-border-subtle flex flex-col gap-4">
+<span class="material-symbols-outlined text-secondary text-3xl">cloud_sync</span>
+<div class="font-headline-sm">클라우드 데이터 연동</div>
+</div>
+</div>
+</div>
+</section>
+<!-- KPI Section -->
+<section class="py-section-v-desktop px-gutter-h-desktop w-full border-t border-border-subtle" id="performance">
+<div class="max-w-container-max mx-auto text-center">
+<h2 class="font-headline-md text-headline-md text-on-surface mb-16">압도적인 퍼포먼스 지표 (KPI)</h2>
+<div class="grid grid-cols-2 md:grid-cols-3 gap-y-16 gap-x-8">
+<div class="flex flex-col items-center gap-2">
+<div class="font-headline-lg text-headline-lg text-secondary">98%</div>
+<div class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest">과실 인식률</div>
+</div>
+<div class="flex flex-col items-center gap-2">
+<div class="font-headline-lg text-headline-lg text-primary">3x</div>
+<div class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest">수동 대비 수확 속도</div>
+</div>
+<div class="flex flex-col items-center gap-2">
+<div class="font-headline-lg text-headline-lg text-primary">-40%</div>
+<div class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest">인건비 절감</div>
+</div>
+<div class="flex flex-col items-center gap-2">
+<div class="font-headline-lg text-headline-lg text-secondary">24/7</div>
+<div class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest">연속 가동 시간</div>
+</div>
+<div class="flex flex-col items-center gap-2">
+<div class="font-headline-lg text-headline-lg text-primary">99%</div>
+<div class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest">무손상 수확률</div>
+</div>
+<div class="flex flex-col items-center gap-2">
+<div class="font-headline-lg text-headline-lg text-primary">+25%</div>
+<div class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest">전체 생산성 향상</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Tech Stack Section -->
+<section class="bg-primary text-on-primary py-section-v-desktop px-gutter-h-desktop w-full" id="tech">
+<div class="max-w-container-max mx-auto">
+<h2 class="font-headline-md text-headline-md mb-12">핵심 기술 스택</h2>
+<div class="flex flex-wrap gap-4">
+<div class="px-6 py-3 rounded border border-on-surface-variant bg-inverse-surface font-label-caps text-label-caps tracking-widest">ROS2 (로봇 제어)</div>
+<div class="px-6 py-3 rounded border border-on-surface-variant bg-inverse-surface font-label-caps text-label-caps tracking-widest">PYTORCH (AI 비전)</div>
+<div class="px-6 py-3 rounded border border-on-surface-variant bg-inverse-surface font-label-caps text-label-caps tracking-widest">C++ (성능 최적화)</div>
+<div class="px-6 py-3 rounded border border-on-surface-variant bg-inverse-surface font-label-caps text-label-caps tracking-widest">CUDA (GPU 가속)</div>
+<div class="px-6 py-3 rounded border border-on-surface-variant bg-inverse-surface font-label-caps text-label-caps tracking-widest">REACT (대시보드 UI)</div>
+<div class="px-6 py-3 rounded border border-on-surface-variant bg-inverse-surface font-label-caps text-label-caps tracking-widest">AWS (클라우드 인프라)</div>
+</div>
+</div>
+</section>
+<!-- ROI Section -->
+<section class="py-section-v-desktop px-gutter-h-desktop w-full border-t border-border-subtle bg-surface-container-lowest text-center">
+<div class="max-w-container-max mx-auto flex flex-col items-center justify-center">
+<h2 class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest mb-4">예상 투자 대비 수익률 (ROI)</h2>
+<div class="font-roi-hero text-roi-hero text-on-surface mb-6">+300%</div>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">초기 도입 비용은 도입 2년 차에 완전 회수 가능하며, 이후 연 평균 300% 이상의 운영 이익 개선 효과를 보장합니다.</p>
+</div>
+</section>
+<!-- Roadmap Section -->
+<section class="bg-surface-container py-section-v-desktop px-gutter-h-desktop w-full border-t border-border-subtle">
+<div class="max-w-container-max mx-auto">
+<h2 class="font-headline-md text-headline-md text-on-surface mb-12">기술 개발 로드맵</h2>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+<div class="bg-surface p-8 rounded-2xl border border-border-subtle">
+<div class="font-numeral-data text-secondary-fixed-dim mb-4">PHASE 01 / Q1 2024</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-4">실증 테스트 및 고도화</h3>
+<p class="font-body-sm text-on-surface-variant">주요 스마트팜 대상 PoC 진행 및 필드 데이터 확보. 비전 AI 모델의 엣지 케이스 대응력 강화.</p>
+</div>
+<div class="bg-surface p-8 rounded-2xl border-2 border-secondary-container relative">
+<div class="absolute top-4 right-4 flex h-3 w-3">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-3 w-3 bg-secondary"></span>
+</div>
+<div class="font-numeral-data text-secondary mb-4">PHASE 02 / Q3 2024 (CURRENT)</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-4">상용화 모델 정식 출시</h3>
+<p class="font-body-sm text-on-surface-variant">양산 체제 구축 및 국내 주요 농업 법인 납품 시작. 클라우드 기반 통합 관제 서비스 오픈.</p>
+</div>
+<div class="bg-surface p-8 rounded-2xl border border-border-subtle opacity-75">
+<div class="font-numeral-data text-outline mb-4">PHASE 03 / 2025</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-4">글로벌 시장 진출</h3>
+<p class="font-body-sm text-on-surface-variant">북미/유럽 시장 규격 인증(CE/UL) 획득. 다품종 작물(딸기, 파프리카 등) 수확 모델 확장.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- CTA / Demo Form Section -->
+<section class="py-section-v-desktop px-gutter-h-desktop w-full" id="demo">
+<div class="max-w-3xl mx-auto bg-surface p-12 rounded-[32px] border border-border-subtle shadow-sm">
+<h2 class="font-headline-md text-headline-md text-center mb-4">데모 시연 신청</h2>
+<p class="font-body-sm text-center text-on-surface-variant mb-12">농업 혁신의 첫 걸음을 AGRI-FLOW와 함께 하세요. 담당자가 24시간 내에 연락 드립니다.</p>
+<form class="space-y-6">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div>
+<label class="block font-label-caps text-label-caps mb-2 text-on-surface-variant" for="name">이름 (Name)</label>
+<input class="w-full bg-surface-container-lowest border border-border-subtle rounded-lg px-4 py-3 focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary font-body-sm" id="name" placeholder="홍길동" type="text"/>
+</div>
+<div>
+<label class="block font-label-caps text-label-caps mb-2 text-on-surface-variant" for="email">이메일 (Email)</label>
+<input class="w-full bg-surface-container-lowest border border-border-subtle rounded-lg px-4 py-3 focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary font-body-sm" id="email" placeholder="hello@example.com" type="email"/>
+</div>
+</div>
+<div>
+<label class="block font-label-caps text-label-caps mb-2 text-on-surface-variant" for="company">회사/농장명 (Company)</label>
+<input class="w-full bg-surface-container-lowest border border-border-subtle rounded-lg px-4 py-3 focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary font-body-sm" id="company" placeholder="농업법인 에그리" type="text"/>
+</div>
+<div>
+<label class="block font-label-caps text-label-caps mb-2 text-on-surface-variant" for="message">요청 및 문의사항 (Message)</label>
+<textarea class="w-full bg-surface-container-lowest border border-border-subtle rounded-lg px-4 py-3 focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary font-body-sm h-32 resize-none" id="message" placeholder="온실 면적 및 주 재배 작물 등을 적어주시면 더 정확한 상담이 가능합니다."></textarea>
+</div>
+<button class="w-full bg-secondary text-on-secondary font-label-caps text-label-caps tracking-widest py-4 rounded-lg hover:bg-secondary-fixed hover:text-on-secondary-fixed transition-colors mt-4" type="button">
+                SUBMIT REQUEST
+            </button>
+</form>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-primary-container dark:bg-tertiary-container text-on-primary-fixed w-full rounded-t-xl mt-16">
+<div class="max-w-container-max mx-auto px-gutter-h-desktop py-section-v-desktop flex flex-col md:flex-row justify-between gap-base">
+<div class="flex flex-col gap-4">
+<div class="font-headline-sm text-headline-sm text-secondary-fixed">AGRI-FLOW</div>
+<p class="font-body-sm text-body-sm text-on-primary-container dark:text-on-tertiary-container">© 2024 AGRI-FLOW ROBOTICS. ENGINEERED FOR PRECISION.</p>
+</div>
+<div class="flex gap-8 font-body-sm text-body-sm text-on-primary-container dark:text-on-tertiary-container">
+<a class="hover:text-secondary-fixed transition-colors duration-200 ease-in-out" href="#">Technology</a>
+<a class="hover:text-secondary-fixed transition-colors duration-200 ease-in-out" href="#">Impact</a>
+<a class="hover:text-secondary-fixed transition-colors duration-200 ease-in-out" href="#">Documentation</a>
+<a class="hover:text-secondary-fixed transition-colors duration-200 ease-in-out" href="#">Terms</a>
+<a class="hover:text-secondary-fixed transition-colors duration-200 ease-in-out" href="#">Privacy</a>
+</div>
+</div>
+</footer>
+</body></html>

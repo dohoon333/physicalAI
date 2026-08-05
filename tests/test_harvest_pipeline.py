@@ -1426,3 +1426,102 @@ class TestLoggingRobustnessRegression:
 
         log_path = logging_config.log_dir / logging_config.json_lines_filename
         assert log_path.is_file()
+
+
+class TestStructureObstacleRegression:
+    """잎·줄기가 충돌 검사 장애물로 실제 전달되는지(MAJOR 회귀 방지)."""
+
+    @staticmethod
+    def _frame_with_obstacle_depth() -> tuple[FrameInput, tuple[int, int, int, int]]:
+        """접근 경로 위(과실보다 카메라 쪽)에 얕은 깊이 패치를 심은 프레임을 만든다.
+
+        패치는 과실 중심 픽셀 근처에 두어야 한다. 접근 방향이 광축과 거의 평행하므로,
+        중심에서 몇 픽셀만 벗어나도 경로에서 안전 마진(5mm) 밖으로 밀려나기 때문이다.
+        """
+        frame = build_test_frame(truss_id="T-OBSTACLE")
+        depth = frame.depth_mm.copy()
+        v0, v1, u0, u1 = 118, 123, 161, 165
+        depth[v0:v1, u0:u1] = 485.0  # 과실 표면(약 509mm)보다 카메라 쪽
+        patched = FrameInput(
+            rgb=frame.rgb,
+            depth_mm=depth,
+            intrinsics=frame.intrinsics,
+            rgb_timestamp_ms=frame.rgb_timestamp_ms,
+            depth_timestamp_ms=frame.depth_timestamp_ms,
+            truss_id=frame.truss_id,
+        )
+        return patched, (v0, v1, u0, u1)
+
+    def test_leaf_on_approach_path_blocks_harvest(self, config: PipelineConfig) -> None:
+        """접근 경로를 막는 잎이 있으면 수확이 차단되어야 한다.
+
+        과거 구현은 `segment()`가 `fruit_instances`만 반환해 잎·줄기 인스턴스가 장애물 풀에
+        도달하지 못했다. 규칙 기반 베이스라인은 잎·줄기를 만들지 않아 잠재 결함으로 남아
+        있었지만, 잎·줄기 클래스를 내는 학습 모델을 주입하는 순간 실제 결함이 된다.
+
+        이 테스트는 동일한 프레임에 잎 인스턴스만 추가해, 결과가 READY → SKIP_COLLISION으로
+        바뀌는지 확인한다. `_build_obstacle_pool`을 직접 호출하지 않고 `process_truss`
+        전체 경로를 통과시켜야 배선 누락을 실제로 잡을 수 있다.
+        """
+        from harvest_pipeline.interfaces import SegmentationInstance
+
+        frame, (v0, v1, u0, u1) = self._frame_with_obstacle_depth()
+        inner = ClassicalColorSegmentationModel()
+
+        class WithLeafModel:
+            """규칙 기반 결과에 잎 인스턴스를 하나 덧붙인다."""
+
+            def predict(self, rgb):  # type: ignore[no-untyped-def]
+                result = inner.predict(rgb)
+                leaf_mask = np.zeros(rgb.shape[:2], dtype=bool)
+                leaf_mask[v0:v1, u0:u1] = True
+                leaf = SegmentationInstance(
+                    instance_id=999,
+                    class_label="leaf",
+                    mask=leaf_mask,
+                    bbox_xyxy=(u0, v0, u1, v1),
+                    confidence=0.9,
+                )
+                return SegmentationResult(instances=result.instances + (leaf,))
+
+        # 대조군 — 잎 인스턴스 없음(깊이 패치는 동일하게 존재)
+        baseline = make_pipeline(config).process_truss(frame)
+        assert baseline.harvestable, "대조군에서 수확 대상이 나오지 않아 비교가 불가능하다"
+
+        # 실험군 — 잎 인스턴스만 추가
+        blocked = make_pipeline(config, segmentation_model=WithLeafModel()).process_truss(frame)
+
+        statuses = {
+            r.pose_result.status for r in blocked.fruit_results if r.pose_result is not None
+        }
+        assert PoseStatus.SKIP_COLLISION in statuses, (
+            f"접근 경로 위의 잎이 충돌로 감지되지 않았다: {statuses}"
+        )
+        assert not blocked.harvestable
+
+    def test_segment_returns_non_fruit_instances(self, config: PipelineConfig) -> None:
+        """segment()는 과실만 걸러내지 않고 전체 인스턴스를 반환해야 한다."""
+        from harvest_pipeline.interfaces import SegmentationInstance
+
+        inner = ClassicalColorSegmentationModel()
+
+        class WithStemModel:
+            def predict(self, rgb):  # type: ignore[no-untyped-def]
+                result = inner.predict(rgb)
+                stem_mask = np.zeros(rgb.shape[:2], dtype=bool)
+                stem_mask[0:30, 0:6] = True
+                stem = SegmentationInstance(
+                    instance_id=998,
+                    class_label="stem",
+                    mask=stem_mask,
+                    bbox_xyxy=(0, 0, 6, 30),
+                    confidence=0.8,
+                )
+                return SegmentationResult(instances=result.instances + (stem,))
+
+        pipeline = make_pipeline(config, segmentation_model=WithStemModel())
+        rgb, _ = pipeline.run_stage0(build_test_frame())
+        segmentation = pipeline.segment(rgb, truss_id="T-STEM")
+
+        labels = {i.class_label for i in segmentation.instances}
+        assert {"fruit", "stem"} <= labels, f"구조 클래스가 유실됐다: {labels}"

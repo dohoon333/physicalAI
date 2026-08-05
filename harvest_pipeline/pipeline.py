@@ -41,6 +41,7 @@ from harvest_pipeline.interfaces import (
     PedicelPoseEstimator,
     RipenessClassifierModel,
     SegmentationInstance,
+    SegmentationResult,
 )
 from harvest_pipeline.logging_utils import get_logger, stage_timer
 from harvest_pipeline.stage0_common import (
@@ -339,8 +340,12 @@ class HarvestPreprocessingPipeline:
             ctx["rgb_shape"] = list(rgb.shape)
         return rgb, depth
 
-    def segment(self, rgb: np.ndarray, *, truss_id: str) -> tuple[SegmentationInstance, ...]:
+    def segment(self, rgb: np.ndarray, *, truss_id: str) -> SegmentationResult:
         """인스턴스 세그멘테이션을 수행한다(Stage 0 말단 — A/B 양쪽이 공유).
+
+        과실만 걸러 반환하지 않고 **전체 결과를 그대로 반환**한다. 잎·줄기 인스턴스는 과실
+        루프에서는 쓰이지 않지만 접근 경로 충돌 검사의 장애물로 반드시 필요하기 때문이다
+        (여기서 걸러버리면 실제로 경로를 막는 잎·줄기가 충돌 검사에서 조용히 사라진다).
 
         타임아웃 한계(중요): 추론을 워커 스레드에서 실행하고 `future.result(timeout=...)`로
         **호출자를 해제**하므로 파이프라인은 제한 시간 내에 제어권을 되찾는다. 그러나 파이썬
@@ -373,10 +378,9 @@ class HarvestPreprocessingPipeline:
             except Exception as exc:  # 외부 모델 라이브러리의 임의 예외를 도메인 예외로 변환
                 raise SegmentationModelError(f"세그멘테이션 추론 실패: {exc}") from exc
 
-            fruits = result.fruit_instances
-            ctx["detected_fruit_count"] = len(fruits)
+            ctx["detected_fruit_count"] = len(result.fruit_instances)
             ctx["detected_instance_count"] = len(result.instances)
-        return fruits
+        return result
 
     # ------------------------------------------------------------------
     # 단일 과실 처리 (Stage A → Stage B)
@@ -519,7 +523,7 @@ class HarvestPreprocessingPipeline:
 
         try:
             rgb, depth = self.run_stage0(frame)
-            fruit_instances = self.segment(rgb, truss_id=frame.truss_id)
+            segmentation = self.segment(rgb, truss_id=frame.truss_id)
         except _FATAL_EXCEPTIONS:
             raise
         except Exception as exc:
@@ -540,10 +544,19 @@ class HarvestPreprocessingPipeline:
                 aborted_reason=f"{type(exc).__name__}: {exc}",
             )
 
-        # 인접 과실과 잎/줄기를 모두 장애물로 사용한다. 과실만 넘기면 실제로 접근 경로를
-        # 막는 잎·줄기·유인끈이 충돌 검사에서 완전히 빠진다.
+        fruit_instances = segmentation.fruit_instances
+        # 잎·줄기 등 과실이 아닌 인스턴스. 과실만 장애물로 쓰면 실제로 접근 경로를 막는
+        # 잎·줄기·유인끈이 충돌 검사에서 완전히 빠진다.
+        structure_instances = tuple(
+            inst for inst in segmentation.instances if inst.class_label != "fruit"
+        )
+
         obstacle_pool, obstacle_owner_ids = self._build_obstacle_pool(
-            depth, fruit_instances, frame.intrinsics, frame.camera_to_base_transform
+            depth,
+            fruit_instances,
+            structure_instances,
+            frame.intrinsics,
+            frame.camera_to_base_transform,
         )
 
         results: list[FruitResult] = []
@@ -593,15 +606,17 @@ class HarvestPreprocessingPipeline:
         self,
         depth_mm: np.ndarray,
         fruit_instances: tuple[SegmentationInstance, ...],
+        structure_instances: tuple[SegmentationInstance, ...],
         intrinsics: CameraIntrinsics,
         camera_to_base_transform: np.ndarray | None,
     ) -> tuple[np.ndarray, np.ndarray]:
         """모든 장애물 포인트를 **단일 배열 한 쌍**으로 미리 구축한다.
 
-        `(points, owner_ids)` 형태로 반환하며 owner_ids는 각 점을 소유한 과실 인덱스다
-        (과실이 아닌 잎/줄기 등은 -1). 과실별로 "자기 자신을 제외한 나머지"를 만들 때
-        `owner_ids != index` 불리언 마스크만 적용하면 되므로, 과실마다 np.vstack을 호출해
-        O(N²) 크기의 메모리를 복사하던 방식을 피할 수 있다(N=30이면 vstack 30회 ×
+        `(points, owner_ids)` 형태로 반환하며 owner_ids는 각 점을 소유한 과실 인덱스다.
+        잎·줄기처럼 특정 과실에 속하지 않는 구조물은 **-1**을 부여해, 어떤 과실을 처리할
+        때도 제외되지 않고 항상 장애물로 남는다. 과실별로 "자기 자신을 제외한 나머지"를
+        만들 때 `owner_ids != index` 불리언 마스크만 적용하면 되므로, 과실마다 np.vstack을
+        호출해 O(N²) 크기의 메모리를 복사하던 방식을 피할 수 있다(N=30이면 vstack 30회 ×
         각 O(N) 복사 → 단일 배열 1회 구축).
         """
         point_chunks: list[np.ndarray] = []
@@ -615,6 +630,15 @@ class HarvestPreprocessingPipeline:
                 continue
             point_chunks.append(points)
             owner_chunks.append(np.full(points.shape[0], index, dtype=np.int32))
+
+        for instance in structure_instances:
+            points = self._extract_points(
+                depth_mm, instance.combined_mask, intrinsics, camera_to_base_transform
+            )
+            if points.shape[0] == 0:
+                continue
+            point_chunks.append(points)
+            owner_chunks.append(np.full(points.shape[0], -1, dtype=np.int32))
 
         if not point_chunks:
             return np.empty((0, 3), dtype=np.float32), np.empty((0,), dtype=np.int32)
