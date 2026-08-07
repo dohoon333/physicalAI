@@ -1,0 +1,195 @@
+- generic [active] [ref=e1]:
+  - link "본문으로 건너뛰기" [ref=e2] [cursor=pointer]:
+    - /url: "#flow"
+  - banner [ref=e3]:
+    - navigation "연구 셀 탐색" [ref=e4]:
+      - link "FLOWPICK / RESEARCH" [ref=e5] [cursor=pointer]:
+        - /url: "#flow"
+      - button "menu" [ref=e6] [cursor=pointer]
+  - main [ref=e7]:
+    - region [ref=e8]:
+      - generic [ref=e9]:
+        - generic [ref=e10]:
+          - paragraph [ref=e11]: pre-implementation research cell · measured causal trace
+          - heading "예측은 추격이 아니라, 접촉 시각을 위한 선행 위치다." [level=1] [ref=e12]
+          - paragraph [ref=e13]: 이 페이지는 구현된 장비의 성과가 아니라, 단일 물체가 고정 레인을 지날 때 과거 지연 표본만으로 미래 접촉점을 계산하는 연구 계획을 기록합니다. 명령 축은 벨트 방향 X와 흡착 높이 Z뿐이며, y_lane은 수동 가이드가 고정한 기준선입니다.
+          - generic [ref=e14]:
+            - link "causal method" [ref=e15] [cursor=pointer]:
+              - /url: "#method"
+            - link "five go/no-go gates" [ref=e16] [cursor=pointer]:
+              - /url: "#result"
+        - figure "실선의 인과 경로와 점선의 독립 채점 경로는 만나지 않습니다. 압력과 하류 신호는 진단이며 최종 정답이 아닙니다." [ref=e17]:
+          - img "관측, 과거 지연 추정, 미래 접촉, 독립 기준 영상의 인과 추적 카메라가 관측한 물체 위치를 시작으로, 과거 유효 표본만으로 만든 L_hat이 미래 접촉점을 계산한다. X축은 미리 이동하고 Z축은 접촉 시각에 하강한다. 별도 기준 영상은 제어와 분리되어 블라인드 주석으로만 점수를 낸다. y_lane은 고정 수동 가이드다." [ref=e18]:
+            - generic [ref=e22]: CONTROL CAUSAL TRACE / NOT A RESULT
+            - generic [ref=e23]: X RAIL / BELT DIRECTION
+            - generic [ref=e24]: FIXED PASSIVE y_lane GUIDE / NO COMMAND
+            - generic [ref=e26]: OBSERVED OBJECT
+            - generic [ref=e27]: POSITION / s0 at t0
+            - generic [ref=e29]: CAMERA OBSERVATION
+            - generic [ref=e31]: PRIOR-VALID-SAMPLE
+            - generic [ref=e32]: L_hat / i < k only
+            - generic [ref=e33]: "CURRENT OR FUTURE: EXCLUDED"
+            - generic [ref=e36]: X PRE-
+            - generic [ref=e37]: POSITIONING
+            - generic [ref=e39]: Z DESCENT
+            - generic [ref=e41]: PROJECTED CONTACT / s_contact
+            - generic [ref=e44]: REFERENCE VIDEO
+            - generic [ref=e45]: SCORING PATH
+            - generic [ref=e46]: BLIND ANNOTATION
+            - generic [ref=e47]: INDEPENDENT OF CONTROL
+    - region [ref=e49]:
+      - generic [ref=e50]:
+        - paragraph [ref=e51]: boundary / one passive lane
+        - heading "작게 고정해야, 보상 효과가 무엇인지 읽을 수 있다." [level=2] [ref=e52]
+        - generic [ref=e53]:
+          - generic [ref=e54]:
+            - paragraph [ref=e55]: 이 연구는 단일 클래스·단일 기계 레인·단일 고정 빈·동시에 하나의 물체만 다룹니다. 카메라의 y_cam은 레인 적격성 판정에만 쓰며, 어떤 경우에도 명령으로 변환되지 않습니다.
+            - paragraph [ref=e56]: 레인 바깥·경계·불명확 후보는 NO_PICK_LANE으로 기록하고 하류로 통과합니다. 이는 실패한 픽이 아니라, 안전한 비동작입니다.
+          - complementary [ref=e57]:
+            - paragraph [ref=e58]: scope ledger
+            - heading "명령 가능한 것은 두 축뿐" [level=3] [ref=e59]
+            - paragraph [ref=e60]: X 벨트 방향 선행 이동 · Z 접촉과 상승 · y_lane 수동 가이드의 고정 중심선.
+            - paragraph [ref=e61]: OUT OF SCOPE / Y-axis drive · robot arm · sorting · multi-bin · concurrent tracking
+    - region [ref=e62]:
+      - generic [ref=e63]:
+        - paragraph [ref=e64]: method / temporal causality
+        - heading "이번 시도의 지연은, 이번 시도의 예측에 들어가지 않는다." [level=2] [ref=e65]
+        - generic [ref=e66]:
+          - generic [ref=e67]:
+            - paragraph [ref=e68]: 계획의 기준 시각은 Pi가 명령을 전송하는 now = t_cmd_tx_pi입니다. 현재 위치는 같은 물체의 노출 기준 태그와 현재 인코더 차이로 갱신합니다. 이미 소비된 검출 시간은 한 번만 반영합니다.
+            - paragraph [ref=e69]: 다음 시도의 L_hat은 완료된 과거 유효 지연 표본의 분위수입니다. 현재 시도의 실제 기동 지연, ACK 귀환, 미래 인코더 관측은 예측 입력이 아닙니다.
+          - generic [ref=e70]:
+            - paragraph [ref=e71]: bounded clock mapping
+            - heading "Pi↔ESP32는 권한이 아니라, 사건 상관을 위한 경계다." [level=3] [ref=e72]
+            - paragraph [ref=e73]: 각 블록에서 Pi·카메라의 C_Pi와 ESP32의 C_ESP는 원시값을 직접 빼지 않습니다. 수락된 affine mapping만 Pi 도메인 기동 시각을 파생합니다. 이 mapping은 모션 명령이나 ESP32 안전 권한을 바꾸지 않습니다.
+            - paragraph [ref=e74]: MEASUREMENT PLAN · 30 exchanges / TARGET · residual p95 ≤ 2 ms and max ≤ 5 ms
+        - generic "접촉 시각 예측식" [ref=e75]: s_contact = s_est(now) + v_hat × (L_hat + T_x + T_z_down)t_contact_pred = now + L_hat + T_x + T_z_downx_cmd = map_s_to_x(s_contact)
+        - generic "접촉 중심 예측과 후속 진공 시퀀스 다이어그램" [ref=e76]:
+          - img "접촉 중심 예측 이후의 X와 Z 동작 순서 X축이 예측 위치에 먼저 도착하고, 그 뒤 Z축이 접촉 높이에 내려간다. 진공은 접촉 이후에만 시작한다." [ref=e77]:
+            - generic [ref=e79]: OBSERVED s0 / t0
+            - generic [ref=e81]: X PRE-POSITION / CONTACT WINDOW
+            - generic [ref=e82]: Z DOWN
+            - generic [ref=e84]: CONTACT, THEN VACUUM / DIAGNOSTIC LOG
+        - list [ref=e85]:
+          - listitem [ref=e86]:
+            - generic [ref=e87]: OBSERVE / TAG
+            - generic [ref=e88]:
+              - heading "노출 기준 위치와 인코더를 하나의 물체 태그로 남깁니다." [level=3] [ref=e89]
+              - paragraph [ref=e90]:
+                - text: 프레임 수명, 명령 식별자, 인코더 연속성, 수락 mapping이 하나라도 성립하지 않으면 추정값으로 메우지 않고
+                - generic [ref=e91]: NO_PICK
+                - text: 처리합니다.
+          - listitem [ref=e92]:
+            - generic [ref=e93]: PREDICT / PRIOR ONLY
+            - generic [ref=e94]:
+              - heading "접촉 중심을 계산하고 X를 안전 Z에서 선행 이동합니다." [level=3] [ref=e95]
+              - paragraph [ref=e96]:
+                - text: 고정점 반복이 수렴하지 않거나 접촉 창에 늦으면
+                - generic [ref=e97]: NO_PICK_NO_CONVERGENCE
+                - text: 또는
+                - generic [ref=e98]: NO_PICK_MOTION_LATE
+                - text: 로 통과합니다.
+          - listitem [ref=e99]:
+            - generic [ref=e100]: SCORE / SEPARATE
+            - generic [ref=e101]:
+              - heading "별도 기준 영상과 블라인드 주석이 접촉 오차와 결과를 판정합니다." [level=3] [ref=e102]
+              - paragraph [ref=e103]:
+                - text: 기준 영상은 제어 명령을 내리지 않습니다. 무작위화된
+                - generic [ref=e104]: trial_id
+                - text: 와 세션 분할 주석으로 조건을 가리고, 압력·하류 카운터는 교차 진단에만 남깁니다.
+    - region [ref=e105]:
+      - generic [ref=e106]:
+        - paragraph [ref=e107]: measurement plan / motion and feed
+        - heading "시간표는 성능 주장이 아니라, 측정해 갱신할 동작 예산이다." [level=2] [ref=e108]
+        - paragraph [ref=e109]: 접촉 예측에는 X 기동까지의 과거 지연과 X·Z 하강만 들어갑니다. 밸브와 유지 시간은 접촉 뒤의 상태입니다. 모든 시간은 ESP32 로그로 실측 p95를 갱신하기 전에는 확정값이 아닙니다.
+        - table [ref=e111]:
+          - rowgroup [ref=e112]:
+            - row [ref=e113]:
+              - columnheader "budget element" [ref=e114]
+              - columnheader "status" [ref=e115]
+              - columnheader "no-pick / measurement rule" [ref=e116]
+          - rowgroup [ref=e117]:
+            - row [ref=e118]:
+              - cell "T_x / X pre-position" [ref=e119]
+              - cell "MEASUREMENT PLAN · profile and p95" [ref=e120]
+              - cell "스트로크 밖, 수렴 실패, 접촉 창 지연이면 통과" [ref=e121]
+            - row [ref=e122]:
+              - cell "T_z_down / contact descent" [ref=e123]
+              - cell "MEASUREMENT PLAN · p95" [ref=e124]
+              - cell "X 준비 전, 제한 접근, 접촉 창 부족이면 통과" [ref=e125]
+            - row [ref=e126]:
+              - cell "T_valve + T_hold / after contact" [ref=e127]
+              - cell "MEASUREMENT PLAN · p95" [ref=e128]
+              - cell "압력 이상 또는 남은 시간이 부족하면 통과" [ref=e129]
+            - row [ref=e130]:
+              - cell "T_cycle / reset and feed" [ref=e131]
+              - cell "MEASUREMENT PLAN · p95 + spacing" [ref=e132]
+              - cell "다음 적격 물체의 안전 여유를 침범하면 통과" [ref=e133]
+        - generic [ref=e134]:
+          - complementary [ref=e135]:
+            - paragraph [ref=e136]: feed condition
+            - heading "계량 게이트가 한 번에 하나씩 고정 간격으로 방출합니다." [level=3] [ref=e137]
+            - paragraph [ref=e138]: MEASUREMENT PLAN · spacing_time ≥ T_cycle_p95 + 20% margin. 게이트 통과 센서가 실제 간격 편차를 남기며, 더 짧은 간격은 NO_PICK_SPACING입니다.
+          - complementary [ref=e139]:
+            - paragraph [ref=e140]: research targets
+            - heading "수치는 달성값이 아니라 해석 전제입니다." [level=3] [ref=e141]
+            - paragraph [ref=e142]: TARGET · 10 cm/s / TARGET · 12 picks per minute / TARGET · 30 minutes unattended
+            - paragraph [ref=e143]: "HYPOTHESIS · compensation ON versus OFF: +50 percentage points"
+    - region [ref=e144]:
+      - generic [ref=e145]:
+        - paragraph [ref=e146]: safety / deterministic state ownership
+        - heading "Pi는 요청하고, ESP32는 안전 상태를 소유한다." [level=2] [ref=e147]
+        - generic [ref=e148]:
+          - generic [ref=e149]:
+            - paragraph [ref=e150]: E-stop, 통신 상실, 제한 위반에서 ESP32의 안전 동작은 우회할 수 없습니다. FAULT_STOP은 축 모션을 끄고 진공을 해제하며, 수동 원인 확인과 재캘리브레이션 전에는 새 명령을 거부합니다.
+            - paragraph [ref=e151]: no-pick은 비정상 픽이 아닙니다. RECOVER는 안전 Z·진공 해제·안전 X 복귀 뒤에만 다음 물체를 받을 수 있습니다.
+          - list "결정적 안전 상태 목록" [ref=e152]:
+            - listitem [ref=e153]:
+              - generic [ref=e154]: READY → TRACK → ARMED
+              - paragraph [ref=e155]: 유효 캘리브레이션과 후보만 수락. 프레임·인코더·접촉 창이 불충분하면 진공 없이 복구.
+            - listitem [ref=e156]:
+              - generic [ref=e157]: PICK → VERIFY → RECOVER
+              - paragraph [ref=e158]: X 도착 뒤 Z 하강, 접촉 뒤 진공, 상승 후 단일 고정 빈에 배출. 압력은 진단 기록.
+            - listitem [ref=e159]:
+              - generic [ref=e160]: FAULT_STOP
+              - paragraph [ref=e161]: 제한 위반·E-stop·심각 통신 상실에서 모션 차단과 진공 해제. 자동 재시작 없음.
+            - listitem [ref=e162]:
+              - generic [ref=e163]: PENDING SAFETY SETTING · heartbeat 100 ms / timeout 300 ms
+              - paragraph [ref=e164]: 블록 시작 시 기록하고 블록 안에서는 변경하지 않는 안전 기준입니다.
+    - region [ref=e165]:
+      - generic [ref=e166]:
+        - paragraph [ref=e167]: interpretation boundary / exactly five gates
+        - heading "결과를 읽기 전에 통과해야 할, 다섯 개의 Go/No-Go 게이트." [level=2] [ref=e168]
+        - paragraph [ref=e169]: 모든 상태는 아직 NOT-YET-MEASURED입니다. 아래 다섯 항목 중 하나라도 No-Go이면 성공률을 주장하지 않고, 원인을 기록한 뒤 해당 조건부터 보완합니다.
+        - list [ref=e170]:
+          - listitem [ref=e171]:
+            - generic [ref=e173]:
+              - heading "고정 수동 레인" [level=3] [ref=e174]
+              - paragraph [ref=e175]: MEASUREMENT PLAN · 20-object acceptance check / TARGET · |y_cam − y_lane| ≤ 5 mm / PENDING · zero jam. 한 물체라도 벗어나면 레일 폭과 중심을 재조정합니다.
+          - listitem [ref=e176]:
+            - generic [ref=e178]:
+              - heading "시간 인과성과 클록 mapping" [level=3] [ref=e179]
+              - paragraph [ref=e180]: MEASUREMENT PLAN · 30 exchanges / TARGET · p95 ≤ 2 ms, max ≤ 5 ms. 과거 유효 표본만의 L_hat, 원시 사건 로그, 매핑 ID가 함께 남아야 합니다.
+          - listitem [ref=e181]:
+            - generic [ref=e183]:
+              - heading "독립 정답과 주석 무결성" [level=3] [ref=e184]
+              - paragraph [ref=e185]: 기준 영상·블라인드 주석·세션 분할·재주석을 하나의 독립 증거 경로로 묶습니다. MEASUREMENT PLAN · 20% re-annotation / PENDING · 400–480 annotations / TARGET · unscorable ≤ 5%.
+          - listitem [ref=e186]:
+            - generic [ref=e188]:
+              - heading "모션과 투입 간격" [level=3] [ref=e189]
+              - paragraph [ref=e190]: X/Z/진공/복귀의 p95와 속도별 간격을 측정하고, no-pick 가드와 fault 전이를 적용합니다. MEASUREMENT PLAN · gate release interval / TARGET · T_cycle_p95 + 20% margin.
+          - listitem [ref=e191]:
+            - generic [ref=e193]:
+              - heading "고정 조건 ON/OFF ablation" [level=3] [ref=e194]
+              - paragraph [ref=e195]: 조명, 물체, 레인, 흡착 높이, X/Z 프로파일, 벨트 속도, 투입 간격, 안전 여유를 고정하고 보상 항만 바꿉니다. MEASUREMENT PLAN · at least 150 independently scorable eligible trials per condition / HYPOTHESIS · +50 percentage points.
+    - region [ref=e196]:
+      - generic [ref=e198]:
+        - paragraph [ref=e199]: research review contact
+        - heading "이것은 제품 소개가 아니라, 측정 가능한 질문의 경계선입니다." [level=2] [ref=e200]
+        - paragraph [ref=e201]: 계획 기간은 PLANNING HORIZON · 4–6 weeks입니다. 구현 전에는 지연 예산, 고정 레인, 독립 기준 영상, 안전 상태, 주석 절차를 먼저 검토합니다. 결과가 나오기 전까지 모든 수치는 목표·가설·보류 항목으로 남습니다.
+        - link "return to causal trace" [ref=e202] [cursor=pointer]:
+          - /url: "#flow"
+  - contentinfo [ref=e203]:
+    - generic [ref=e204]:
+      - generic [ref=e205]: FLOWPICK / INSTRUMENTED RESEARCH CELL
+      - generic [ref=e206]: NO IMPLEMENTED-CELL CLAIMS · NO PHOTOGRAPHIC EVIDENCE
