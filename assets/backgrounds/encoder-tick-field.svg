@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" fill="none">
+  <rect width="1600" height="1000" fill="#151719"/>
+  <g stroke="#30363A" stroke-width="1" opacity="0.38">
+    <path d="M0 64H320M0 128H320M0 192H320M0 808H320M0 872H320M0 936H320"/>
+    <path d="M1280 64H1600M1280 128H1600M1280 192H1600M1280 808H1600M1280 872H1600M1280 936H1600"/>
+  </g>
+  <g stroke="#566067" stroke-width="1.5" opacity="0.54">
+    <path d="M0 112H304M1296 888H1600"/>
+    <path d="M32 112V76M64 112V92M96 112V76M128 112V92M160 112V76M192 112V92M224 112V76M256 112V92M288 112V76"/>
+    <path d="M1312 888V924M1344 888V908M1376 888V924M1408 888V908M1440 888V924M1472 888V908M1504 888V924M1536 888V908M1568 888V924"/>
+  </g>
+  <g stroke="#30363A" stroke-width="1" opacity="0.34">
+    <path d="M0 364H248M0 636H248M1352 364H1600M1352 636H1600"/>
+  </g>
+  <g stroke="#566067" stroke-width="2" opacity="0.46">
+    <path d="M112 112V52M1488 888V948"/>
+  </g>
+  <g stroke="#30363A" stroke-width="1.5" stroke-dasharray="4 6" opacity="0.46">
+    <path d="M208 112V24M1392 888V976"/>
+  </g>
+  <g stroke="#566067" stroke-width="1" opacity="0.42">
+    <rect x="200" y="16" width="16" height="16"/>
+    <rect x="1384" y="968" width="16" height="16"/>
+  </g>
+</svg>

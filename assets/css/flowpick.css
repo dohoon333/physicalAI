@@ -190,7 +190,10 @@ img, svg { max-width: 100%; }
 	flex-direction: column;
 	align-items: center;
 	width: 100%;
-	max-width: 34rem;
+	/* 내비 8개가 한 줄에 들어가는 최소 폭. 줄바꿈되면 항목 사이 괘선이
+	   행 경계에서 어긋나 보이므로 폭으로 해결한다. 768px(모바일 전환점)
+	   에서 좌우 여백을 뺀 736px과 같아 그 아래로는 메뉴 버튼이 받는다. */
+	max-width: 46rem;
 	text-align: center;
 	transition:
 		opacity var(--motion-standard) var(--ease-standard),
@@ -248,12 +251,20 @@ body.is-panel-open .card {
 
 .navlist {
 	display: flex;
-	flex-wrap: wrap;
-	justify-content: center;
 	list-style: none;
 	margin-top: var(--space-7);
 	border: var(--rule-width) solid var(--color-rule-strong);
 	border-radius: var(--radius-control);
+}
+
+/*
+	글자 수가 칸마다 달라(문제 2자 ↔ 적용 대상 4자) 내용 폭에 맡기면
+	칸이 들쭉날쭉해 보인다. 남는 폭을 균등 분배해 모든 칸을 같은 크기로
+	만들고, 구분 괘선도 일정한 간격으로 떨어지게 한다.
+*/
+.navlist__item {
+	flex: 1 1 0;
+	min-width: 0;
 }
 
 .navlist__item + .navlist__item {
@@ -264,8 +275,10 @@ body.is-panel-open .card {
 	display: flex;
 	align-items: center;
 	justify-content: center;
+	width: 100%;
 	min-height: var(--target-min);
-	padding: 0 var(--space-5);
+	padding: 0 var(--space-2);
+	white-space: nowrap;
 	color: var(--color-text-muted);
 	font-family: var(--font-data);
 	font-size: var(--type-data);
@@ -279,6 +292,16 @@ body.is-panel-open .card {
 .navlist__link:focus-visible {
 	color: var(--color-text-primary);
 	background: var(--color-surface);
+}
+
+/*
+	칸이 1px 괘선으로 맞붙어 있어 기본 바깥 오프셋(--space-1)을 그대로 쓰면
+	포커스 링이 띠 위아래로 새고 이웃 칸 링과 겹쳐 이중선처럼 보인다.
+	첫/마지막 칸은 좌우로도 벗어나 칸마다 모양이 달라진다.
+	링을 칸 안쪽으로 넣어 어느 칸에서든 같은 사각형이 되게 한다.
+*/
+.navlist__link:focus-visible {
+	outline-offset: calc(var(--space-1) * -1);
 }
 
 .card__menu-btn { display: none; }
@@ -346,7 +369,11 @@ body.is-panel-open .card {
 .panel__close svg { width: 1rem; height: 1rem; }
 
 .panel__title {
-	display: inline-block;
+	/* inline-block으로 두면 바로 뒤의 .badge(inline-flex)가 같은 줄에 붙는다.
+	   밑줄은 글자 폭만큼만 긋되 블록으로 흘러야 한다. */
+	display: block;
+	width: fit-content;
+	max-width: 100%;
 	margin-bottom: var(--space-6);
 	padding-bottom: var(--space-3);
 	border-bottom: var(--rule-width) solid var(--color-rule-strong);
@@ -812,6 +839,9 @@ body.is-panel-open .foot { opacity: 0; pointer-events: none; }
 
 	.navlist.is-open { display: flex; }
 
+	/* 세로 목록에서는 flex:1이 칸을 세로로 늘려버린다. 높이는 내용에 맡긴다. */
+	.navlist__item { flex: 0 0 auto; }
+
 	.navlist__item + .navlist__item {
 		border-left: 0;
 		border-top: var(--rule-width) solid var(--color-rule-strong);
@@ -819,6 +849,28 @@ body.is-panel-open .foot { opacity: 0; pointer-events: none; }
 
 	.panel { padding: var(--space-5) var(--space-3); }
 	.panel__inner { padding: var(--space-6) var(--space-4) var(--space-7); }
+
+	/*
+		좁은 화면에서 다열 표와 넓은 다이어그램은 가로로 넘친다. 각 래퍼가
+		스크롤을 주지만 신호가 없으면 "잘렸다"로 읽힌다. 그라디언트 페이드는
+		DESIGN.md가 금지하므로 글자로 알린다.
+	*/
+	.sheet-wrap,
+	.diagram__scroll { position: relative; }
+
+	.sheet-wrap::after,
+	.diagram__scroll::after {
+		display: block;
+		margin-top: var(--space-2);
+		color: var(--color-text-muted);
+		font-family: var(--font-data);
+		font-size: var(--type-data);
+		letter-spacing: 0.04em;
+		text-align: center;
+	}
+
+	.sheet-wrap::after { content: "← 표를 좌우로 밀어 보세요 →"; }
+	.diagram__scroll::after { content: "← 그림을 좌우로 밀어 보세요 →"; }
 	.diagram { padding: var(--space-3); }
 	.form__row { grid-template-columns: 1fr; }
 	.metrics { grid-template-columns: 1fr; }

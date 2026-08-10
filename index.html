@@ -1,17 +1,20 @@
 <!DOCTYPE html>
 <!--
-	FLOWPICK — 지연 보상 기반 X/Z 컨베이어 트래킹 픽킹 연구 셀
+	FLOWPICK — 컨베이어 트래킹 픽킹 기술 개발
 
 	마크업·스타일·스크립트·다이어그램 전부 자체 제작.
 	제3자 템플릿, 아이콘 폰트, JS 라이브러리를 사용하지 않는다.
 	설계 근거는 DESIGN.md 참조.
+
+	※ 회사 정보(상호·설립·소재지·대표·연락처)는 사실 확인이 필요한 항목이라
+	   임의로 채우지 않았다. "문의" 패널의 회사 정보 표에 입력 자리를 남겨 뒀다.
 -->
 <html lang="ko">
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>FLOWPICK — 지연 보상 컨베이어 트래킹 픽킹 연구 셀</title>
-	<meta name="description" content="컨베이어를 멈추지 않고 접촉 시각의 물체 위치를 예측해 집는 연구 셀. 지연 보상의 효과를 고정 조건 ablation으로 측정하는 사전 계획입니다.">
+	<title>FLOWPICK — 컨베이어 트래킹 픽킹 기술</title>
+	<meta name="description" content="컨베이어를 멈추지 않고 이동 중인 물체를 집습니다. 지연 보상으로 접촉 시각의 위치를 예측하는 픽킹 기술을 개발합니다.">
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&amp;display=swap">
@@ -25,7 +28,6 @@
 
 	<header class="card" id="card">
 		<div class="card__mark" aria-hidden="true">
-			<!-- 조준 표식: 예측 지점을 겨눈다는 뜻 -->
 			<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6">
 				<circle cx="16" cy="16" r="9"></circle>
 				<circle cx="16" cy="16" r="1.8" fill="currentColor" stroke="none"></circle>
@@ -37,20 +39,21 @@
 		<div class="card__body">
 			<h1 class="card__title">FLOWPICK</h1>
 			<p class="card__tagline">
-				컨베이어를 멈추지 않고 집는다.<br>
-				인식이 끝나는 순간 물체는 이미 거기 없으므로,<br>
-				접촉할 시각의 위치를 예측한다.
+				멈추지 않는 라인에서 집습니다.<br>
+				이동 중인 물체의 접촉 위치를 지연 보상으로 예측하는<br>
+				컨베이어 트래킹 픽킹 기술을 개발합니다.
 			</p>
 		</div>
 
 		<nav class="card__nav" aria-label="주요 섹션">
 			<button class="card__menu-btn" id="menuBtn" type="button" aria-expanded="false" aria-controls="navlist">섹션 목록</button>
 			<ul class="navlist" id="navlist">
-				<li class="navlist__item"><a class="navlist__link" href="#intro">문제</a></li>
-				<li class="navlist__item"><a class="navlist__link" href="#method">측정 설계</a></li>
-				<li class="navlist__item"><a class="navlist__link" href="#detector">검출기</a></li>
-				<li class="navlist__item"><a class="navlist__link" href="#kpi">성과 지표</a></li>
-				<li class="navlist__item"><a class="navlist__link" href="#roadmap">로드맵</a></li>
+				<li class="navlist__item"><a class="navlist__link" href="#about">소개</a></li>
+				<li class="navlist__item"><a class="navlist__link" href="#problem">문제</a></li>
+				<li class="navlist__item"><a class="navlist__link" href="#technology">기술</a></li>
+				<li class="navlist__item"><a class="navlist__link" href="#applications">적용 분야</a></li>
+				<li class="navlist__item"><a class="navlist__link" href="#validation">검증 체계</a></li>
+				<li class="navlist__item"><a class="navlist__link" href="#status">개발 현황</a></li>
 				<li class="navlist__item"><a class="navlist__link" href="#contact">문의</a></li>
 			</ul>
 		</nav>
@@ -58,16 +61,55 @@
 
 	<main class="panels" id="panels">
 
-		<!-- 문제 -->
-		<article class="panel" id="intro" hidden aria-labelledby="intro-title">
+		<!-- 소개 -->
+		<article class="panel" id="about" hidden aria-labelledby="about-title">
 			<div class="panel__inner">
 				<button class="panel__close" type="button">
 					<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2 2l12 12M14 2L2 14"></path></svg>
 					<span class="visually-hidden">닫기</span>
 				</button>
-				<h2 class="panel__title" id="intro-title" tabindex="-1">문제</h2>
+				<h2 class="panel__title" id="about-title" tabindex="-1">소개</h2>
 
-				<p class="question">검출 이후의 통신·계산·기구 동작 지연을 과거 표본으로 추정해 보상하면, 동일한 조건에서 보상하지 않을 때보다 픽 성공률이 높아지는가?</p>
+				<p class="lede">FLOWPICK은 <strong>컨베이어를 멈추지 않고 이동 중인 물체를 집는 기술</strong>을 개발합니다. 산업 현장에서 <strong>Conveyor Tracking</strong> 또는 <strong>Picking on the Fly</strong>로 불리는 문제이며, 정지 손실 없이 라인을 운용하려는 공정이라면 어디서든 만나게 됩니다.</p>
+
+				<h3>우리가 푸는 문제</h3>
+				<p>정지한 물체를 집는 일과 움직이는 물체를 집는 일은 난이도의 차이가 아니라 <strong>종류의 차이</strong>입니다. 카메라가 위치를 알아낸 순간 물체는 이미 그 자리에 없습니다. 그래서 우리는 물체를 쫓지 않고, <strong>접촉할 시각의 위치를 예측해 먼저 가서 기다립니다.</strong></p>
+				<p>이 예측이 성립하려면 시스템이 <strong>자기 자신의 지연을 알아야</strong> 합니다. 카메라 노출, 전송, 검출, 통신, 기구 동작에 걸리는 시간을 항목별로 재고, 그만큼 앞을 내다봐야 합니다. 우리 기술의 중심에는 이 <strong>지연 보상</strong>이 있습니다.</p>
+
+				<h3>일하는 방식</h3>
+				<ol class="ledger">
+					<li class="ledger__item">
+						<span class="ledger__index">원칙 01</span>
+						<h3>재기 전에 만들지 않는다</h3>
+						<p>지연을 측정하기 전에 예측 로직부터 만들면, 빗나가는 원인을 알고리즘에서 찾다가 몇 주를 태웁니다. 실제 원인은 대개 기구가 늦게 도착한 것입니다. 그래서 우리는 <strong>계측을 첫 번째 산출물</strong>로 둡니다.</p>
+					</li>
+					<li class="ledger__item">
+						<span class="ledger__index">원칙 02</span>
+						<h3>성능은 독립적으로 판정한다</h3>
+						<p>제어에 쓰는 신호로 결과를 채점하면 순환 논증이 됩니다. 우리는 제어계와 분리된 기준 영상과 블라인드 판정으로 성패를 가립니다. <strong>숫자가 좋아 보이는 것보다 숫자를 믿을 수 있는 편이 낫습니다.</strong></p>
+					</li>
+					<li class="ledger__item">
+						<span class="ledger__index">원칙 03</span>
+						<h3>안 집는 것도 정상 동작이다</h3>
+						<p>적격하지 않은 물체를 무리해서 집으면 실패보다 나쁜 결과가 나옵니다. 우리 시스템은 판단 근거가 부족하면 사유를 남기고 통과시킵니다. <strong>안전한 비동작이 위험한 동작보다 낫다</strong>는 원칙을 상태 기계 수준에서 강제합니다.</p>
+					</li>
+				</ol>
+
+				<h3>현재 단계</h3>
+				<p>FLOWPICK은 현재 <strong>설계를 마치고 첫 실증 셀 구축을 준비하는 단계</strong>입니다. 요구 정의, 측정 설계, 안전 상태 설계, 하드웨어 사양이 문서로 확정되어 있으며 아직 구축·측정 전입니다. 구체적인 목표 수치와 일정은 <a href="#status">개발 현황</a>에 정리해 두었습니다.</p>
+			</div>
+		</article>
+
+		<!-- 문제 -->
+		<article class="panel" id="problem" hidden aria-labelledby="problem-title">
+			<div class="panel__inner">
+				<button class="panel__close" type="button">
+					<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2 2l12 12M14 2L2 14"></path></svg>
+					<span class="visually-hidden">닫기</span>
+				</button>
+				<h2 class="panel__title" id="problem-title" tabindex="-1">문제</h2>
+
+				<p class="question">인식이 끝나는 순간, 물체는 이미 거기 없습니다.</p>
 
 				<p>정지한 물체를 집는 시스템은 <strong>본 위치 = 집을 위치</strong>입니다. 물체가 움직이는 순간 이 등식이 깨집니다. 카메라가 셔터를 열고, 프레임이 전송되고, 검출이 끝나고, 명령이 나가고, 축이 가속해 도착하기까지 물체는 계속 전진합니다.</p>
 
@@ -109,7 +151,6 @@
 							</g>
 							<text x="30" y="340" fill="#aab0ad" font-family="ui-monospace, Menlo, monospace" font-size="12" font-weight="600" letter-spacing="1.4">BELT · 인코더 태깅</text>
 
-							<!-- 고정 횡방향 기준선. 명령 축이 아니라 허용오차 기준일 뿐이다. -->
 							<line x1="30" y1="276" x2="690" y2="276" stroke="#566067" stroke-dasharray="3 5" stroke-width="1"></line>
 							<text x="690" y="270" fill="#aab0ad" font-family="ui-monospace, Menlo, monospace" font-size="11" font-weight="600" text-anchor="end">y_lane (고정 · 비구동)</text>
 
@@ -119,7 +160,7 @@
 							<line x1="250" y1="260" x2="250" y2="358" stroke="#566067" stroke-dasharray="4 4" stroke-width="1.5"></line>
 							<line x1="470" y1="216" x2="470" y2="358" stroke="#566067" stroke-dasharray="4 4" stroke-width="1.5"></line>
 							<line x1="250" y1="352" x2="463" y2="352" stroke="#cbb67b" stroke-width="2" marker-end="url(#fpArrow)"></line>
-							<text x="360" y="380" fill="#cbb67b" font-family="ui-monospace, Menlo, monospace" font-size="12" font-weight="600" letter-spacing="0.6" text-anchor="middle">v_belt × (L_hat + 이동시간)</text>
+							<text x="360" y="380" fill="#cbb67b" font-family="ui-monospace, Menlo, monospace" font-size="12" font-weight="600" letter-spacing="0.6" text-anchor="middle">v_belt × (지연 + 이동시간)</text>
 
 							<defs>
 								<marker id="fpArrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
@@ -128,253 +169,508 @@
 							</defs>
 						</svg>
 					</div>
-					<figcaption><span class="sig-observe">파란색</span>은 카메라가 실제로 관측한 위치, <span class="sig-predict">노란색</span>은 <code>L_hat</code>(과거 유효 표본으로만 만든 지연 추정)을 반영한 접촉 시각의 예측 위치입니다. 헤드는 쫓아가지 않고 예측 지점에서 기다립니다. 횡방향 <code>y_lane</code>은 기구로 고정된 기준선이며 구동 축이 아닙니다.</figcaption>
+					<figcaption><span class="sig-observe">파란색</span>은 카메라가 실제로 관측한 위치, <span class="sig-predict">노란색</span>은 접촉 시각에 물체가 도달할 예측 위치입니다. 헤드는 쫓아가지 않고 예측 지점에서 기다립니다.</figcaption>
 				</figure>
 
-				<p>구하려는 값은 <code>x_pick = x_detect + v_belt × (t_latency + t_move(d))</code> 입니다. 여기서 <code>t_move</code>가 이동 거리 <code>d</code>에 의존하고 <code>d</code>는 다시 <code>x_pick</code>에 의존합니다. <strong>답을 알아야 답을 구할 수 있는 구조</strong>라 고정점 반복으로 3~5회 만에 수렴시킵니다.</p>
+				<p>보상을 생략하면 시스템은 항상, 예외 없이, 일정한 거리만큼 빗나갑니다. 그리고 그 실패는 "예측 알고리즘이 부정확하다"로 오진되기 쉽습니다. <strong>실제 원인은 예측이 아니라 자기 자신의 지연입니다.</strong></p>
 
-				<p>이 보상을 생략하면 시스템은 항상, 예외 없이, 일정한 거리만큼 빗나갑니다. 그리고 그 실패는 "예측 알고리즘이 부정확하다"로 오진되기 쉽습니다. 실제 원인은 예측이 아니라 자기 자신의 지연입니다.</p>
-
-				<h3>기존 공정이 막히는 지점</h3>
+				<h3>현장에서 이 문제가 드러나는 방식</h3>
 				<ul class="prose-list">
-					<li><strong>정지-검사-재개의 손실</strong> — 개체마다 벨트를 세우면 가감속이 사이클타임을 지배하고, 그 지연이 상·하류로 번집니다.</li>
-					<li><strong>인력 피킹의 한계</strong> — 반복 상지 동작 부담이 크고, 속도를 올리면 누락률이 급증하며 작업자별 편차로 품질 예측이 불가능합니다.</li>
-					<li><strong>고정 타이밍의 취약성</strong> — "센서 통과 후 N밀리초"는 벨트 속도가 일정하다는 가정에 전적으로 의존합니다. 속도가 흔들리면 전량 빗나가고 시스템은 그 사실조차 모릅니다.</li>
-					<li><strong>지연을 모르면 진단도 없다</strong> — 개선 투자가 카메라·검출기·액추에이터 중 어디로 가야 할지 판단할 근거가 사라집니다.</li>
+					<li><strong>정지-검사-재개의 손실</strong> — 개체마다 벨트를 세우면 가감속이 사이클타임을 지배하고, 그 지연이 상·하류 공정으로 번집니다.</li>
+					<li><strong>인력 피킹의 한계</strong> — 반복 상지 동작 부담이 크고, 속도를 올리면 누락률이 급증하며 작업자별 편차로 품질 예측이 어렵습니다.</li>
+					<li><strong>고정 타이밍의 취약성</strong> — "센서 통과 후 N밀리초"는 벨트 속도가 일정하다는 가정에 전적으로 의존합니다. 속도가 흔들리면 전량 빗나가고, 시스템은 그 사실조차 인지하지 못합니다.</li>
+					<li><strong>지연을 모르면 개선 지점도 모른다</strong> — 투자를 카메라·검출기·액추에이터 중 어디에 해야 할지 판단할 근거가 없습니다.</li>
 				</ul>
-
-				<p>같은 문제가 산업에서는 <strong>Conveyor Tracking</strong> 또는 <strong>Picking on the Fly</strong>로 불립니다. 본 셀은 그 문제를 탁상 규모로 축소해 원리를 검증하는 연구 장치이며, 제품이 아닙니다.</p>
 			</div>
 		</article>
 
-		<!-- 측정 설계 -->
-		<article class="panel" id="method" hidden aria-labelledby="method-title">
+		<!-- 기술 -->
+		<article class="panel" id="technology" hidden aria-labelledby="technology-title">
 			<div class="panel__inner">
 				<button class="panel__close" type="button">
 					<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2 2l12 12M14 2L2 14"></path></svg>
 					<span class="visually-hidden">닫기</span>
 				</button>
-				<h2 class="panel__title" id="method-title" tabindex="-1">측정 설계</h2>
+				<h2 class="panel__title" id="technology-title" tabindex="-1">기술</h2>
 
-				<p class="lede">측정 설계가 느슨하면 좋은 숫자가 나옵니다. 그 숫자는 시스템이 아니라 설계의 허점을 보여줄 뿐입니다. 아래 다섯 규칙은 그 허점을 미리 막기 위한 것입니다.</p>
+				<p class="lede">지연이 성능을 직접 결정하는 문제에서는 <strong>부품 사양보다 설계 판단이 결과를 가릅니다.</strong> 아래는 요구 조건에서 논리적으로 강제된 선택들입니다.</p>
 
+				<h3>인코더 태깅으로 속도 변동을 흡수한다</h3>
+				<p>벨트 속도는 부하와 전압에 따라 흔들립니다. "속도 × 경과시간"으로 위치를 계산하면 오차가 계속 쌓입니다. 우리는 물체를 발견한 순간의 <strong>인코더 눈금을 그 물체에 이름표처럼 붙입니다.</strong> 이후 위치는 눈금 차이로만 계산되므로, 벨트가 빨라지든 느려지든 정확합니다. 속도를 추정할 필요 자체가 사라집니다.</p>
+
+				<h3>검출기는 지연 예산으로 고른다</h3>
+				<p>더 똑똑한 모델이 언제나 더 나은 선택은 아닙니다. 단일 클래스를 고정 조명 아래에서 찾는 일이라면 색상·윤곽 검출로 충분하고, <strong>세그멘테이션 모델을 얹는 순간 검출 시간이 한 자릿수 밀리초에서 수십 밀리초로 올라갑니다.</strong> 그 차이가 그대로 접촉 오차가 됩니다.</p>
+				<p>우리는 검출기 선택을 정확도만이 아니라 <strong>지연 예산 배분</strong>으로 다룹니다. 클래스 확장이나 형상 기반 판정이 필요해지면 그때 승격하되, 얻는 것과 잃는 지연을 같은 표에 놓고 결정합니다.</p>
+
+				<h3>세 가지 설계 결정</h3>
+				<ol class="ledger">
+					<li class="ledger__item">
+						<span class="ledger__index">결정 01</span>
+						<h3>페일세이프를 배관으로 보장한다</h3>
+						<p>안전 규칙은 모든 정지 상황에서 <strong>진공 해제</strong>를 요구합니다. 유로를 막기만 하는 밸브는 전원이 끊겨도 잔류 부압이 서서히 빠져 해제가 보장되지 않습니다. 우리는 <strong>비여자 상태에서 흡반이 대기와 연통되도록</strong> 배관합니다. 전원 상실이든 펌웨어 정지든 비상정지든 물리적으로 흡착이 풀립니다 — 페일세이프가 소프트웨어가 아니라 <strong>배관 방향</strong>으로 보장됩니다.</p>
+					</li>
+					<li class="ledger__item">
+						<span class="ledger__index">결정 02</span>
+						<h3>카메라는 노출 타임스탬프로 고른다</h3>
+						<p>예측의 기준점은 <strong>노출이 시작된 시각</strong>입니다. 이 값을 제공하지 않는 카메라를 쓰면 기준점 자체가 추정값이 되고, 그 위에 쌓은 모든 계산의 인과성이 무너집니다. 우리에게 카메라 선정 1순위는 화질이 아니라 <strong>이 값의 제공 여부</strong>입니다.</p>
+					</li>
+					<li class="ledger__item">
+						<span class="ledger__index">결정 03</span>
+						<h3>샘플링 주기는 안전 요구가 정한다</h3>
+						<p>"센서값이 일정 시간 이상 없으면 즉시 정지"라는 규칙은, 그 시간보다 빠르게 읽어야만 성립합니다. 느리게 읽으면 <strong>값이 없다는 사실 자체를 감지할 수 없습니다.</strong> 샘플링 주기는 편의로 정하는 값이 아니라 안전 요구에서 역산되는 값입니다.</p>
+					</li>
+				</ol>
+
+				<h3>연산과 실시간 제어를 분리한다</h3>
+				<p>범용 리눅스는 실시간 운영체제가 아닙니다. 마이크로초 단위 스텝 펄스와 밸브 타이밍은 <strong>전용 MCU</strong>가 맡고, 무엇을 어디서 집을지는 상위 컴퓨터가 정합니다. 안전 상태 기계는 MCU가 소유하며, 상위 컴퓨터는 요청만 할 수 있고 안전 동작을 우회할 수 없습니다.</p>
+				<p>같은 분리가 <strong>통신 구조에도 그대로 적용</strong>됩니다.</p>
+
+				<figure class="diagram">
+					<div class="diagram__scroll">
+						<svg viewBox="0 0 760 440" role="img" aria-labelledby="cmTitle cmDesc" xmlns="http://www.w3.org/2000/svg">
+							<title id="cmTitle">통신 구조도</title>
+							<desc id="cmDesc">카메라가 상위 컴퓨터로 영상과 노출 시각을 보냅니다. 상위 컴퓨터와 제어 MCU는 제어 링크와 기록 링크 두 개로 나뉘어 연결됩니다. MCU는 센서를 읽고 구동부와 동기 LED를 제어합니다. 기준 영상 장치는 전기적으로 연결되지 않고 동기 LED의 빛으로만 시각을 맞춥니다.</desc>
+
+							<g font-family="ui-monospace, Menlo, monospace" font-weight="600" text-anchor="middle">
+								<rect x="240" y="8" width="240" height="40" rx="3" fill="none" stroke="#89b7c7" stroke-width="1.5"></rect>
+								<text x="360" y="33" fill="#89b7c7" font-size="12">글로벌 셔터 카메라</text>
+
+								<rect x="225" y="74" width="270" height="56" rx="3" fill="none" stroke="#566067" stroke-width="1.5"></rect>
+								<text x="360" y="98" fill="#f2eee4" font-size="13">상위 컴퓨터</text>
+								<text x="360" y="116" fill="#aab0ad" font-size="11">검출 · 예측 · 기록</text>
+
+								<rect x="225" y="204" width="270" height="56" rx="3" fill="none" stroke="#8baf85" stroke-width="1.5"></rect>
+								<text x="360" y="228" fill="#8baf85" font-size="13">제어 MCU</text>
+								<text x="360" y="246" fill="#aab0ad" font-size="11">안전 상태 소유</text>
+
+								<rect x="25" y="310" width="200" height="50" rx="3" fill="none" stroke="#566067" stroke-width="1.5"></rect>
+								<text x="125" y="331" fill="#f2eee4" font-size="12">센서</text>
+								<text x="125" y="349" fill="#aab0ad" font-size="11">인코더 · IR · 압력</text>
+
+								<rect x="270" y="310" width="180" height="50" rx="3" fill="none" stroke="#566067" stroke-width="1.5"></rect>
+								<text x="360" y="331" fill="#f2eee4" font-size="12">구동부</text>
+								<text x="360" y="349" fill="#aab0ad" font-size="11">축 · 흡착 · 게이트</text>
+
+								<rect x="500" y="310" width="160" height="50" rx="3" fill="none" stroke="#cbb67b" stroke-width="1.5"></rect>
+								<text x="580" y="331" fill="#cbb67b" font-size="12">동기 표시등</text>
+								<text x="580" y="349" fill="#aab0ad" font-size="11">시각 마커</text>
+
+								<rect x="500" y="386" width="160" height="46" rx="3" fill="none" stroke="#aab0ad" stroke-width="1.5" stroke-dasharray="5 4"></rect>
+								<text x="580" y="405" fill="#aab0ad" font-size="12">기준 영상 장치</text>
+								<text x="580" y="422" fill="#aab0ad" font-size="11">전기 연결 없음</text>
+							</g>
+
+							<!-- 카메라 -> 상위 컴퓨터 -->
+							<line x1="360" y1="48" x2="360" y2="68" stroke="#89b7c7" stroke-width="1.5" marker-end="url(#cmArrowB)"></line>
+							<text x="372" y="63" fill="#89b7c7" font-family="ui-monospace, Menlo, monospace" font-size="11" font-weight="600">영상 + 노출 시각</text>
+
+							<!-- 제어 링크 -->
+							<line x1="295" y1="130" x2="295" y2="198" stroke="#cbb67b" stroke-width="2" marker-end="url(#cmArrowP)"></line>
+							<text x="283" y="152" fill="#cbb67b" font-family="ui-monospace, Menlo, monospace" font-size="11" font-weight="600" text-anchor="end">제어 링크</text>
+							<text x="283" y="169" fill="#aab0ad" font-family="ui-monospace, Menlo, monospace" font-size="10" font-weight="600" text-anchor="end">명령 · 하트비트</text>
+							<text x="283" y="186" fill="#aab0ad" font-family="ui-monospace, Menlo, monospace" font-size="10" font-weight="600" text-anchor="end">명령 = 인코더 카운트</text>
+
+							<!-- 기록 링크 -->
+							<line x1="425" y1="130" x2="425" y2="198" stroke="#aab0ad" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#cmArrowM)"></line>
+							<text x="437" y="152" fill="#aab0ad" font-family="ui-monospace, Menlo, monospace" font-size="11" font-weight="600">기록 링크</text>
+							<text x="437" y="169" fill="#aab0ad" font-family="ui-monospace, Menlo, monospace" font-size="10" font-weight="600">로그 · 분리 운용</text>
+
+							<!-- 센서 -> MCU -->
+							<path d="M125 310 V288 H270 V266" fill="none" stroke="#566067" stroke-width="1.5" marker-end="url(#cmArrow)"></path>
+							<!-- MCU -> 구동부 -->
+							<line x1="360" y1="260" x2="360" y2="304" stroke="#566067" stroke-width="1.5" marker-end="url(#cmArrow)"></line>
+							<!-- MCU -> 동기 표시등 -->
+							<path d="M450 260 V288 H580 V304" fill="none" stroke="#cbb67b" stroke-width="1.5" marker-end="url(#cmArrowP)"></path>
+							<!-- 동기 표시등 -> 기준 영상 (빛) -->
+							<line x1="580" y1="360" x2="580" y2="380" stroke="#cbb67b" stroke-width="1.5" stroke-dasharray="2 4" marker-end="url(#cmArrowP)"></line>
+							<text x="592" y="376" fill="#cbb67b" font-family="ui-monospace, Menlo, monospace" font-size="10" font-weight="600">빛으로만 동기</text>
+
+							<defs>
+								<marker id="cmArrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><polygon points="0 0, 7 3.5, 0 7" fill="#566067"></polygon></marker>
+								<marker id="cmArrowB" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><polygon points="0 0, 7 3.5, 0 7" fill="#89b7c7"></polygon></marker>
+								<marker id="cmArrowP" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><polygon points="0 0, 7 3.5, 0 7" fill="#cbb67b"></polygon></marker>
+								<marker id="cmArrowM" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><polygon points="0 0, 7 3.5, 0 7" fill="#aab0ad"></polygon></marker>
+							</defs>
+						</svg>
+					</div>
+					<figcaption><span class="sig-predict">제어 링크</span>와 <span class="sig-observe">기록 링크</span>를 나눕니다. 로그가 명령과 같은 선을 쓰면, 대기 중인 로그가 명령 송신을 밀어내면서 <strong>측정하려던 지연 자체가 오염됩니다.</strong> 기준 영상 장치는 어디에도 연결되지 않고 표시등의 <span class="sig-predict">빛</span>으로만 시각을 맞춥니다.</figcaption>
+				</figure>
+
+				<h3>명령은 시각이 아니라 인코더 카운트로 보낸다</h3>
+				<p>두 장치는 각자의 시계를 씁니다. 명령에 "이 시각에 접촉하라"를 담으면 <strong>두 시계를 맞추는 일이 제어 경로 안으로 들어옵니다.</strong> 그러면 시계 정합이 흔들리는 순간 제어까지 함께 흔들립니다.</p>
+				<p>그래서 우리는 목표를 <strong>인코더 카운트</strong>로 보냅니다. MCU는 자기 인코더만 보고 그 값에 도달할 때 동작합니다. 제어 경로에 시계 변환이 아예 등장하지 않으므로, <strong>시계 정합은 분석 전용으로 남고 안전은 그와 무관해집니다.</strong> 명령이 조금 늦게 도착해도 목표 카운트는 그대로이고, 늦었다면 MCU가 스스로 판단해 집지 않습니다.</p>
+
+				<p>이 분리는 전원 설계에도 그대로 적용됩니다.</p>
+
+				<figure class="diagram">
+					<div class="diagram__scroll">
+						<svg viewBox="0 0 720 290" role="img" aria-labelledby="pwTitle pwDesc" xmlns="http://www.w3.org/2000/svg">
+							<title id="pwTitle">전원 레일 구성도</title>
+							<desc id="pwDesc">교류 입력이 두 개의 전원공급장치로 나뉩니다. 첫째는 구동부 전원이고, 둘째는 상위 컴퓨터 전용이며 다른 부하와 공유하지 않습니다.</desc>
+
+							<g font-family="ui-monospace, Menlo, monospace" font-weight="600" text-anchor="middle">
+								<rect x="10" y="112" width="80" height="44" rx="3" fill="none" stroke="#566067" stroke-width="1.5"></rect>
+								<text x="50" y="139" fill="#aab0ad" font-size="12">AC 입력</text>
+
+								<rect x="140" y="52" width="120" height="46" rx="3" fill="none" stroke="#566067" stroke-width="1.5"></rect>
+								<text x="200" y="72" fill="#f2eee4" font-size="12">구동 전원</text>
+								<text x="200" y="89" fill="#aab0ad" font-size="11">고전류 부하</text>
+
+								<rect x="140" y="192" width="120" height="46" rx="3" fill="none" stroke="#89b7c7" stroke-width="1.5"></rect>
+								<text x="200" y="212" fill="#89b7c7" font-size="12">연산 전원</text>
+								<text x="200" y="229" fill="#aab0ad" font-size="11">단독 사용</text>
+
+								<rect x="330" y="10" width="200" height="44" rx="3" fill="none" stroke="#566067" stroke-width="1.5"></rect>
+								<text x="430" y="29" fill="#f2eee4" font-size="12">모션 축</text>
+								<text x="430" y="45" fill="#aab0ad" font-size="11">X · Z 구동</text>
+
+								<rect x="330" y="66" width="200" height="44" rx="3" fill="none" stroke="#566067" stroke-width="1.5"></rect>
+								<text x="430" y="85" fill="#f2eee4" font-size="12">공압 · 반송</text>
+								<text x="430" y="101" fill="#aab0ad" font-size="11">펌프 · 밸브 · 벨트 · 조명</text>
+
+								<rect x="330" y="122" width="200" height="44" rx="3" fill="none" stroke="#566067" stroke-width="1.5"></rect>
+								<text x="430" y="141" fill="#f2eee4" font-size="12">보조 구동</text>
+								<text x="430" y="157" fill="#aab0ad" font-size="11">서보 · 센서</text>
+
+								<rect x="330" y="192" width="200" height="44" rx="3" fill="none" stroke="#89b7c7" stroke-width="1.5"></rect>
+								<text x="430" y="211" fill="#89b7c7" font-size="12">상위 컴퓨터</text>
+								<text x="430" y="227" fill="#aab0ad" font-size="11">전용 레일</text>
+							</g>
+
+							<g stroke="#566067" stroke-width="1.5" fill="none" marker-end="url(#pwArrow)">
+								<path d="M90 128 H115 V75 H134"></path>
+								<path d="M260 75 H295 V32 H324"></path>
+								<path d="M260 75 H295 V88 H324"></path>
+								<path d="M260 75 H295 V144 H324"></path>
+							</g>
+							<g stroke="#89b7c7" stroke-width="1.5" fill="none" marker-end="url(#pwArrowB)">
+								<path d="M90 140 H115 V215 H134"></path>
+								<path d="M260 215 H324"></path>
+							</g>
+
+							<line x1="10" y1="178" x2="710" y2="178" stroke="#cbb67b" stroke-width="1.5" stroke-dasharray="6 5" opacity="0.7"></line>
+							<text x="710" y="172" fill="#cbb67b" font-family="ui-monospace, Menlo, monospace" font-size="11" font-weight="600" text-anchor="end">전원 분리 — 과도전류 격리</text>
+
+							<text x="430" y="272" fill="#aab0ad" font-family="ui-monospace, Menlo, monospace" font-size="11" font-weight="600" text-anchor="middle">접지는 한 점(star ground)에서 공통화</text>
+
+							<defs>
+								<marker id="pwArrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+									<polygon points="0 0, 7 3.5, 0 7" fill="#566067"></polygon>
+								</marker>
+								<marker id="pwArrowB" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+									<polygon points="0 0, 7 3.5, 0 7" fill="#89b7c7"></polygon>
+								</marker>
+							</defs>
+						</svg>
+					</div>
+					<figcaption><span class="sig-observe">파란 경로</span>가 <strong>상위 컴퓨터 전용 전원</strong>입니다. 서보는 끼임 시 정격의 몇 배를 순간적으로 끌어당기고, 그 전압 강하가 연산부를 리부트시킵니다. <strong>평균 전류에 여유가 있어도 분리합니다 — 문제는 과도(transient)입니다.</strong></figcaption>
+				</figure>
+
+				<h3>공개 하드웨어 경계</h3>
+				<ol class="ledger">
+					<li class="ledger__item">
+						<span class="ledger__index">경계 01</span>
+						<h3>연산은 요청하고, 제어는 보장한다</h3>
+						<p>설계에서 Pi는 검출·예측 결과를 ESP32에 <strong>UART 요청</strong>을 보냅니다. ESP32는 결정적 입출력, 구동기 타이밍, 안전 상태를 소유합니다. 상위 연산부는 요청할 수 있지만 안전 동작을 우회하지 않습니다.</p>
+					</li>
+					<li class="ledger__item">
+						<span class="ledger__index">경계 02</span>
+						<h3>연산 전원과 구동 전원을 분리한다</h3>
+						<p>전원 레일은 연산부와 구동부를 분리해 구동부의 과도 상태가 연산 경로에 번지지 않도록 설계합니다. 이는 부품 사양이 아니라 제어 판단을 지키기 위한 구조적 경계입니다.</p>
+					</li>
+				</ol>
+
+				<h3>센서·표시 인터페이스</h3>
+				<p>아래는 배선과 부품 사양을 제외하고 공개하는 인터페이스 책임입니다.</p>
+				<div class="sheet-wrap">
+					<table class="sheet">
+						<caption class="visually-hidden">공개 하드웨어 설계의 센서 및 광학 타이밍 표시 인터페이스와 책임 경계</caption>
+						<thead>
+							<tr>
+								<th scope="col">인터페이스</th>
+								<th scope="col">연결 대상</th>
+								<th scope="col">공개 설계 역할</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td>CSI 카메라</td>
+								<td>Pi</td>
+								<td>영상과 노출 시각을 연산 경로로 전달</td>
+							</tr>
+							<tr>
+								<td>쿼드러처 펄스</td>
+								<td>ESP32</td>
+								<td>이동 기준을 제어 경로에 제공</td>
+							</tr>
+							<tr>
+								<td>NPN 오픈 컬렉터 검출 입력</td>
+								<td>ESP32</td>
+								<td>검출 상태를 결정적 입출력으로 수집</td>
+							</tr>
+							<tr>
+								<td>아날로그 ADC 압력 입력</td>
+								<td>ESP32</td>
+								<td>압력 상태를 안전 판단에 제공</td>
+							</tr>
+							<tr>
+								<td>NC 접점 안전 입력</td>
+								<td>ESP32</td>
+								<td>안전 상태의 입력 경계를 형성</td>
+							</tr>
+							<tr>
+								<td>GPIO LED 광학 타이밍 마커</td>
+								<td>ESP32에서 출력</td>
+								<td>기준 영상과 시각을 맞추는 광학 표시</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+
+				<p class="lede">부품 단위 사양과 전원 용량은 <a href="#contact">기술 문서</a>로 제공합니다.</p>
+			</div>
+		</article>
+
+		<!-- 적용 분야 -->
+		<article class="panel" id="applications" hidden aria-labelledby="applications-title">
+			<div class="panel__inner">
+				<button class="panel__close" type="button">
+					<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2 2l12 12M14 2L2 14"></path></svg>
+					<span class="visually-hidden">닫기</span>
+				</button>
+				<h2 class="panel__title" id="applications-title" tabindex="-1">적용 분야</h2>
+
+				<p class="lede">라인을 세우지 않고 개별 물체를 다뤄야 하는 공정이라면 같은 문제를 만납니다. 아래는 우리가 우선 대상으로 삼는 공정과, 각 공정에서 이 기술이 답할 수 있는 질문입니다.</p>
+
+				<div class="sheet-wrap">
+					<table class="sheet">
+						<caption class="visually-hidden">적용 대상 공정과 각 공정의 과제, 이 기술이 답하는 질문</caption>
+						<thead>
+							<tr>
+								<th scope="col">공정</th>
+								<th scope="col">현재의 과제</th>
+								<th scope="col">이 기술이 답하는 것</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td>식품·농산물 포장</td>
+								<td>흘러가는 제품의 등급 분류를 인력에 의존한다. 라인 속도를 올리면 누락률이 급증한다.</td>
+								<td>벨트를 세우지 않는 분류와, 속도별 성공률의 정량적 상한</td>
+							</tr>
+							<tr>
+								<td>물류 분류</td>
+								<td>소형 화물 분류에 인력 피킹을 병행한다. 반복 동작 부담이 크고 편차가 크다.</td>
+								<td>지속 가능한 처리량과, 그 상한을 결정하는 요인</td>
+							</tr>
+							<tr>
+								<td>전자부품·소형 조립</td>
+								<td>부품 정렬·이송 단계에서 정지-재개 손실이 사이클타임을 지배한다.</td>
+								<td>이동 중 픽으로 줄일 수 있는 시간의 실측 크기</td>
+							</tr>
+							<tr>
+								<td>공정 자동화 검토</td>
+								<td>컨베이어 트래킹 도입 전 원리 검증이 필요하나 상용 장비 시험은 비용이 크다.</td>
+								<td>먼저 재야 할 값 — <strong>지연 예산의 항목별 분해</strong></td>
+							</tr>
+							<tr>
+								<td>로보틱스 교육</td>
+								<td>좌표변환·지연 보상·실시간 제어를 한 장치에서 통합 실습할 교보재가 없다.</td>
+								<td>폐루프 전 구간이 계측 가능한 실습 플랫폼</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+
+				<h3>적용 조건</h3>
+				<p>기술이 설계대로 작동하려면 아래 조건이 필요합니다. 조건이 다른 현장은 별도 설계가 필요하므로, 검토 초기에 함께 확인합니다.</p>
+				<ul class="prose-list">
+					<li><strong>단층·이격 배치</strong> — 물체가 겹치지 않고 일정 간격으로 흐르는 라인. 겹침 처리는 별개의 자세 추정 문제입니다.</li>
+					<li><strong>흡착 가능한 표면</strong> — 매끄러운 평면 또는 완만한 곡면. 다공성·거친 표면은 다른 파지 방식이 필요합니다.</li>
+					<li><strong>고정 조명</strong> — 조도가 안정된 구간. 검출 신뢰도가 조명 변동에 직접 좌우됩니다.</li>
+					<li><strong>측정된 속도 범위 안</strong> — 대응 가능한 벨트 속도에는 물리적 상한이 있고, 우리는 그 상한을 <em>측정해서</em> 제시합니다.</li>
+				</ul>
+
+				<h3>도입을 검토하신다면</h3>
+				<p>공개된 수치를 그대로 적용하지 마시길 권합니다. 처리량과 성공률은 물체 간격, 속도 프로파일, 품목 다양성에 따라 크게 달라집니다. 대신 <strong>해당 라인에서 같은 방식으로 지연 예산을 먼저 측정</strong>하는 것이 가장 빠른 판단 근거가 됩니다. 그 측정 절차 자체가 우리가 제공할 수 있는 결과물입니다.</p>
+			</div>
+		</article>
+
+		<!-- 검증 체계 -->
+		<article class="panel" id="validation" hidden aria-labelledby="validation-title">
+			<div class="panel__inner">
+				<button class="panel__close" type="button">
+					<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2 2l12 12M14 2L2 14"></path></svg>
+					<span class="visually-hidden">닫기</span>
+				</button>
+				<h2 class="panel__title" id="validation-title" tabindex="-1">검증 체계</h2>
+
+				<p class="lede">자동화 설비의 성능 수치는 <strong>어떻게 쟀는지가 숫자만큼 중요합니다.</strong> 측정 설계가 느슨하면 좋은 숫자가 나오지만, 그 숫자는 설비가 아니라 설계의 허점을 보여줄 뿐입니다. 우리가 숫자를 만드는 방식을 공개합니다.</p>
+
+				<h3>네 가지 규칙</h3>
 				<ol class="ledger">
 					<li class="ledger__item">
 						<span class="ledger__index">규칙 01</span>
-						<h3>미래를 보고 예측하지 않는다</h3>
-						<p>이번 시도의 지연 보상값은 <strong>이전에 완료된 유효 시도들</strong>로만 만듭니다. 현재 시도에서 실제로 걸린 시간이나 이후 표본은 절대 입력하지 않습니다. 이걸 어기면 실제로는 불가능한 성능이 나오고, 그 사실을 알아채기 어렵습니다.</p>
+						<h3>예측은 과거 데이터로만 만든다</h3>
+						<p>지연 보상값은 <strong>이전에 완료된 시도들</strong>로만 계산합니다. 현재 시도에서 실제로 걸린 시간이나 이후 데이터를 넣으면, 실제로는 불가능한 성능이 나오고 그 사실을 알아채기 어렵습니다. 실운전에서 재현되지 않을 숫자를 만들지 않기 위한 규칙입니다.</p>
 					</li>
 					<li class="ledger__item">
 						<span class="ledger__index">규칙 02</span>
-						<h3>제어에 쓰는 신호로 채점하지 않는다</h3>
-						<p>흡착 압력과 하류 카운터는 <strong>진단용</strong>입니다. 최종 성패와 접촉 오차는 제어와 완전히 분리된 기준 영상으로 판정합니다. 제어 신호로 결과를 판정하면 순환 논증이 됩니다.</p>
+						<h3>제어 신호로 채점하지 않는다</h3>
+						<p>흡착 압력과 카운터는 <strong>장비 진단용</strong>입니다. 최종 성패와 접촉 오차는 제어계와 완전히 분리된 기준 영상으로 판정합니다. 제어에 쓰는 신호로 결과를 판정하면 순환 논증이 됩니다.</p>
 					</li>
 					<li class="ledger__item">
 						<span class="ledger__index">규칙 03</span>
 						<h3>판정자는 조건을 모른다</h3>
-						<p>주석자는 무작위로 섞인 시도 목록을 <strong>보상 ON/OFF를 모른 채</strong> 판정합니다. 세션은 최대 60건으로 끊고, 재주석 20%를 서로 다른 세션에 배치해 피로 드리프트까지 검출합니다.</p>
+						<p>판정은 무작위로 섞인 목록을 대상으로, <strong>어떤 조건에서 나온 시도인지 모르는 상태</strong>에서 이뤄집니다. 일부는 다른 시점에 재판정해 판정 자체의 일관성까지 확인합니다.</p>
 					</li>
 					<li class="ledger__item">
 						<span class="ledger__index">규칙 04</span>
-						<h3>시작 구간은 버린다</h3>
-						<p>지연 추정이 자리 잡기 전인 <strong>첫 20개 표본은 warm-up</strong>으로 표시해 성과 지표와 비교 실험의 분모에서 제외합니다. 초반의 나쁜 숫자도, 좋은 숫자도 결과에 넣지 않습니다.</p>
-					</li>
-					<li class="ledger__item">
-						<span class="ledger__index">규칙 05</span>
 						<h3>조건은 섞어서 번갈아 돌린다</h3>
-						<p>보상 ON을 오전에, OFF를 오후에 돌리면 온도·마모·조명 변화가 조건 차이로 둔갑합니다. 짧은 블록 단위로 무작위 교차 실행하고 조명·물체·레인·흡착 설정·프로파일·속도·투입 간격·게이트 임계값을 전부 고정합니다. <strong>달라지는 것은 지연 보상 항 하나뿐입니다.</strong></p>
+						<p>한 조건을 오전에, 다른 조건을 오후에 돌리면 온도·마모·조명 변화가 조건 차이로 둔갑합니다. 짧은 블록 단위로 무작위 교차 실행하고, 조명·물체·기구·속도·간격·임계값을 전부 고정합니다. <strong>달라지는 것은 검증 대상 항목 하나뿐입니다.</strong></p>
 					</li>
 				</ol>
 
-				<h3>여섯 개 게이트를 모두 통과해야 결과를 해석한다</h3>
-				<p>하나라도 통과하지 못하면 성공률을 주장하지 않고 그 게이트부터 고칩니다. 측정이 끝났다는 것과 측정이 유효하다는 것은 다릅니다. 기본 상태는 <span class="sig-hold">아직 측정 안 됨</span>입니다.</p>
+				<h3>실패는 증거와 함께 설명한다</h3>
+				<p>시도가 실패했을 때 <strong>왜 실패했는지를 추적 가능한 증거와 함께</strong> 설명하려면, 설명하는 계층보다 기록하는 계층이 먼저 있어야 합니다.</p>
 
-				<div class="sheet-wrap">
-					<table class="sheet sheet--gate">
-						<caption class="visually-hidden">MVP Go/No-Go 게이트 여섯 개와 각각의 통과 기준</caption>
-						<thead>
-							<tr><th scope="col">게이트</th><th scope="col">통과 기준</th><th scope="col">현재</th></tr>
-						</thead>
-						<tbody>
-							<tr><td><span class="data">01</span> 물리 레인</td><td>기구 가이드로 횡방향을 강제하고, 기준 물체 20개가 모두 허용 범위 안에 들어오며 끼임이 0건</td><td class="sig-hold">미측정</td></tr>
-							<tr><td><span class="data">02</span> 시간 인과성</td><td>두 장치의 시계를 블록마다 정합하고 잔차 한계를 만족하며, 지연 추정에 과거 표본만 들어갔음을 증명</td><td class="sig-hold">미측정</td></tr>
-							<tr><td><span class="data">03</span> 독립 정답</td><td>기준 영상과 블라인드 주석으로 접촉 오차와 성패를 판정하고, 판정불가율이 기준 이하</td><td class="sig-hold">미측정</td></tr>
-							<tr><td><span class="data">04</span> 동작·투입 예산</td><td>각 동작 구간의 실측 상위값이 나오고, 계량 게이트가 고정 주기로 한 개씩 방출하며 실제 간격 편차가 허용 범위 안</td><td class="sig-hold">미측정</td></tr>
-							<tr><td><span class="data">05</span> 고정 조건 비교</td><td>무작위 교차 실행으로 조건당 표본 수를 채우고, 두 조건의 차이를 신뢰구간과 함께 보고</td><td class="sig-hold">미측정</td></tr>
-							<tr><td><span class="data">06</span> 주석 무결성</td><td>세션 분할 규칙을 지켜 주석을 마치고, 재주석 쌍에서 유의한 드리프트 추세가 없음</td><td class="sig-hold">미측정</td></tr>
-						</tbody>
-					</table>
-				</div>
+				<figure class="diagram">
+					<div class="diagram__scroll">
+						<svg viewBox="0 0 760 210" role="img" aria-labelledby="evTitle evDesc" xmlns="http://www.w3.org/2000/svg">
+							<title id="evTitle">증거 수집에서 설명까지의 단방향 흐름</title>
+							<desc id="evDesc">제어 장치에서 원시 이벤트, 결정론 분석, 증거 묶음을 거쳐 설명 계층으로 흐릅니다. 설명 계층에서 제어 장치로 되돌아가는 연결은 존재하지 않습니다.</desc>
 
-				<h3>안전 상태와 안 집는 선택</h3>
-				<p>적격하지 않으면 집지 않습니다. <strong>안 집는 것은 실패가 아니라 정상 동작</strong>이며, 사유 코드와 함께 기록되고 물체는 하류로 통과합니다. 상태 기계는 MCU가 소유하며 상위 컴퓨터는 요청만 합니다.</p>
+							<g font-family="ui-monospace, Menlo, monospace" font-size="12" font-weight="600" text-anchor="middle">
+								<g>
+									<rect x="8" y="34" width="125" height="62" rx="3" fill="none" stroke="#89b7c7" stroke-width="1.5"></rect>
+									<text x="70" y="60" fill="#89b7c7">제어 장치</text>
+									<text x="70" y="80" fill="#aab0ad" font-size="11">모션 · 안전</text>
+								</g>
+								<g>
+									<rect x="158" y="34" width="125" height="62" rx="3" fill="none" stroke="#566067" stroke-width="1.5"></rect>
+									<text x="220" y="60" fill="#f2eee4">원시 이벤트</text>
+									<text x="220" y="80" fill="#aab0ad" font-size="11">변경 불가 기록</text>
+								</g>
+								<g>
+									<rect x="308" y="34" width="125" height="62" rx="3" fill="none" stroke="#566067" stroke-width="1.5"></rect>
+									<text x="370" y="60" fill="#f2eee4">결정론 분석</text>
+									<text x="370" y="80" fill="#aab0ad" font-size="11">규칙 기반</text>
+								</g>
+								<g>
+									<rect x="458" y="34" width="125" height="62" rx="3" fill="none" stroke="#566067" stroke-width="1.5"></rect>
+									<text x="520" y="60" fill="#f2eee4">증거 묶음</text>
+									<text x="520" y="80" fill="#aab0ad" font-size="11">시도 단위 연결</text>
+								</g>
+								<g>
+									<rect x="608" y="34" width="125" height="62" rx="3" fill="none" stroke="#aab0ad" stroke-width="1.5" stroke-dasharray="5 4"></rect>
+									<text x="670" y="60" fill="#aab0ad">설명 계층</text>
+									<text x="670" y="80" fill="#aab0ad" font-size="11">읽기 전용</text>
+								</g>
+							</g>
 
-				<div class="sheet-wrap">
-					<table class="sheet">
-						<caption class="visually-hidden">셀의 주요 상태와 각 상태에서의 동작</caption>
-						<thead>
-							<tr><th scope="col">상태</th><th scope="col">동작</th></tr>
-						</thead>
-						<tbody>
-							<tr><td><span class="data">READY</span></td><td>안전 높이 유지, 단일 진입만 수락</td></tr>
-							<tr><td><span class="data">TRACK</span></td><td>프레임 수명과 인코더가 정상인 후보만 다음 단계로</td></tr>
-							<tr><td><span class="data">ARMED</span></td><td>X 선행 이동, 접촉 창 감시. 늦으면 진공 없이 복귀</td></tr>
-							<tr><td><span class="data">PICK</span></td><td>Z 하강 완료 후 진공 인가, 유지, 상승</td></tr>
-							<tr><td><span class="data">VERIFY</span></td><td>압력과 카운터를 진단값으로 기록, 단일 빈에 배출</td></tr>
-							<tr><td><span class="data">RECOVER</span></td><td>안전 높이 복귀, 진공 해제, 사유 기록</td></tr>
-							<tr><td><span class="data sig-stop">FAULT_STOP</span></td><td>모션 차단, 진공 해제, 명령 거부. 수동 확인 후에만 재개</td></tr>
-						</tbody>
-					</table>
-				</div>
+							<g stroke="#566067" stroke-width="1.5" marker-end="url(#evArrow)">
+								<line x1="133" y1="65" x2="152" y2="65"></line>
+								<line x1="283" y1="65" x2="302" y2="65"></line>
+								<line x1="433" y1="65" x2="452" y2="65"></line>
+								<line x1="583" y1="65" x2="602" y2="65"></line>
+							</g>
 
-				<h3>물체는 어떻게 다시 올라오는가</h3>
-				<p>투입 간격을 ON/OFF 고정 조건으로 두려면 물체가 벨트에 오르는 방식이 정해져야 합니다. 조건당 150개와 warm-up을 합치면 최소 340회 투입이 필요하고 무개입 30분 목표까지 있어, 수동 투입으로는 간격 고정과 표본 수를 동시에 만족할 수 없습니다.</p>
-				<p>그래서 배출 빈과 하류 회수 슈트를 벨트 진입부로 되돌리는 <strong>중력 순환 경로</strong>를 두고, 진입부의 <strong>서보 계량 게이트</strong>가 고정 주기로 한 개씩 방출합니다. 게이트 통과 센서로 실제 방출 시각과 개수를 기록해 간격 고정이 지켜졌는지 검증합니다.</p>
+							<line x1="670" y1="150" x2="70" y2="150" stroke="#c97872" stroke-width="1.5" stroke-dasharray="6 5" opacity="0.55"></line>
+							<line x1="670" y1="96" x2="670" y2="150" stroke="#c97872" stroke-width="1.5" stroke-dasharray="6 5" opacity="0.55"></line>
+							<line x1="70" y1="150" x2="70" y2="96" stroke="#c97872" stroke-width="1.5" stroke-dasharray="6 5" opacity="0.55"></line>
+							<g stroke="#c97872" stroke-width="2">
+								<line x1="358" y1="138" x2="382" y2="162"></line>
+								<line x1="382" y1="138" x2="358" y2="162"></line>
+							</g>
+							<text x="370" y="188" fill="#c97872" font-family="ui-monospace, Menlo, monospace" font-size="12" font-weight="600" text-anchor="middle">제어 방향 연결 없음</text>
+
+							<defs>
+								<marker id="evArrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+									<polygon points="0 0, 7 3.5, 0 7" fill="#566067"></polygon>
+								</marker>
+							</defs>
+						</svg>
+					</div>
+					<figcaption>설명 계층은 증거를 <span class="sig-observe">읽기만</span> 합니다. <span class="sig-stop">붉은 점선</span>은 의도적으로 <strong>만들지 않은</strong> 경로입니다 — 분석·설명 도구가 설비를 제어하거나 안전 상태를 해제할 수 없습니다.</figcaption>
+				</figure>
+
+				<p>사실 판정의 권위는 <strong>변경 불가능한 원시 기록</strong>에만 있습니다. 시도 식별자와 시각이 연결되지 않은 요약은, 아무리 잘 쓰였어도 근거가 되지 못합니다. 같은 입력을 넣으면 같은 결과가 나와야 하고, 분석 결과가 원시 기록을 덮어쓰는 일은 없습니다.</p>
+				<p>근거가 부족하면 결론을 만들지 않고 <strong>무엇이 더 필요한지를 밝힙니다.</strong> 보류는 실패가 아니라 정상 출력입니다 — 근거 없이 그럴듯한 원인을 만들어내는 쪽이 실패입니다.</p>
+
+				<h3>여섯 개 게이트</h3>
+				<p>물리 레인 정합, 시간 인과성, 독립 판정, 동작·투입 예산, 조건 고정, 판정 무결성. <strong>여섯 게이트를 모두 통과해야 결과를 해석합니다.</strong> 하나라도 통과하지 못하면 성능을 주장하지 않고 그 게이트부터 고칩니다. 측정이 끝났다는 것과 측정이 유효하다는 것은 다르기 때문입니다.</p>
 			</div>
 		</article>
 
-		<!-- 검출기 -->
-		<article class="panel" id="detector" hidden aria-labelledby="detector-title">
+		<!-- 개발 현황 -->
+		<article class="panel" id="status" hidden aria-labelledby="status-title">
 			<div class="panel__inner">
 				<button class="panel__close" type="button">
 					<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2 2l12 12M14 2L2 14"></path></svg>
 					<span class="visually-hidden">닫기</span>
 				</button>
-				<h2 class="panel__title" id="detector-title" tabindex="-1">검출기</h2>
+				<h2 class="panel__title" id="status-title" tabindex="-1">개발 현황</h2>
 
-				<p class="lede">지연이 성능을 직접 결정하는 문제에서는 더 똑똑한 모델이 더 나은 선택이 아닐 수 있습니다. 이 셀에서 딥러닝은 전제가 아니라 필요할 때 켜는 선택지입니다.</p>
+				<p class="badge badge--unmeasured">설계 완료 · 실증 셀 구축 준비 중</p>
 
-				<ul class="prose-list">
-					<li><strong>단일 클래스에는 색상·윤곽</strong> — 고정 조명 아래 단일 클래스라면 색상 임계와 윤곽 검출로 충분합니다. 학습도 라벨링도 데이터셋도 필요 없습니다.</li>
-					<li><strong>여기서 세그멘테이션 모델은 더 느립니다</strong> — 클래스가 하나뿐인데 얹으면 검출 시간이 한 자릿수 밀리초에서 수십 밀리초로 올라갑니다. 그 차이가 그대로 접촉 오차가 됩니다.</li>
-					<li><strong>승격은 이득이 비용을 넘을 때</strong> — 클래스 확장이나 형상 기반 등급 판정이 필요해지면 그때 올립니다. 얻는 것과 잃는 지연을 같은 표에 놓고 결정합니다.</li>
-					<li><strong>셔터가 모델보다 중요합니다</strong> — 롤링 셔터는 이동 물체를 기울여 찍습니다. 입력이 이미 틀어져 있으면 어떤 모델로도 복구할 수 없어, 글로벌 셔터는 선택이 아니라 요구사항입니다.</li>
-				</ul>
+				<p class="lede">FLOWPICK은 현재 <strong>첫 실증 셀을 구축하기 직전 단계</strong>입니다. 요구 정의, 측정 설계, 안전 상태 설계, 하드웨어 사양이 문서로 확정되어 있습니다. <strong>아직 구축·측정 전이므로, 아래 수치는 달성한 값이 아니라 달성하려는 값입니다.</strong> 실측이 나오면 이 자리를 실측값과 신뢰구간으로 교체하고, 목표에 미치지 못한 항목도 그대로 싣겠습니다.</p>
 
-				<h3>지연 예산 — 설계 착수용 초기 추정</h3>
-				<p class="badge badge--unmeasured">실측 아님 · 착수용 추정</p>
-				<p>1주차의 첫 산출물은 이 표를 실측값으로 갈아엎는 것입니다. 항목별로 나누어 재지 않으면 어디를 고쳐야 할지 알 수 없습니다.</p>
-
-				<div class="sheet-wrap">
-					<table class="sheet sheet--budget">
-						<caption class="visually-hidden">지연 예산 구간별 초기 추정값</caption>
-						<thead>
-							<tr><th scope="col">구간</th><th scope="col">추정</th><th scope="col">변동 요인</th></tr>
-						</thead>
-						<tbody>
-							<tr><td>노출 · 센서 리드아웃</td><td>5~15 ms</td><td>노출 시간에 직접 의존. 조명이 밝을수록 짧아진다</td></tr>
-							<tr><td>USB 전송</td><td>5~15 ms</td><td>해상도와 포맷에 의존</td></tr>
-							<tr><td>전처리 · 검출</td><td>5~10 ms</td><td>색상·윤곽 기준. 세그멘테이션 승격 시 크게 증가</td></tr>
-							<tr><td>예측 계산</td><td>&lt; 1 ms</td><td>칼만과 고정점 반복. 무시 가능</td></tr>
-							<tr><td>시리얼 송신</td><td>2~5 ms</td><td>프레임 길이와 보드레이트에 의존</td></tr>
-							<tr><td>MCU 수신 → 기동</td><td>1~3 ms</td><td>첫 유효 스텝까지</td></tr>
-							<tr class="is-total"><td>합계 (색상·윤곽 기준)</td><td>20~50 ms</td><td>목표 150 ms 대비 여유 있음</td></tr>
-						</tbody>
-					</table>
-				</div>
-
-				<p><strong>이 표가 말해주는 것.</strong> 벨트 10 cm/s에서 지연 50 ms면 물체는 5 mm 이동합니다. 물체가 25~50 mm이니 보상 없이도 <em>가끔은 성공</em>합니다. 그게 오히려 위험합니다 — 간헐적 성공은 문제를 은폐합니다. 그래서 보상 유무의 차이가 명확히 드러나는 속도 구간에서 측정합니다.</p>
-
-				<h3>구성</h3>
-				<p>범용 리눅스는 실시간 운영체제가 아닙니다. 마이크로초 단위 스텝 펄스와 밸브 타이밍은 MCU가 맡고, 무엇을 어디서 집을지는 상위 컴퓨터가 정합니다. 이 분리는 편의가 아니라 요구사항입니다.</p>
-				<ul class="prose-list">
-					<li><span class="data">단일보드 컴퓨터</span> — 카메라 수신, 검출, 예측, 로그 수집</li>
-					<li><span class="data">MCU</span> — X/Z 모션, 진공 타이밍, 인코더 수집, 안전 상태 기계</li>
-					<li><span class="data">글로벌 셔터 카메라</span> — 이동 중 촬영에서 왜곡 없는 중심 좌표 확보</li>
-					<li><span class="data">로터리 인코더</span> — 진입 시점 카운트를 물체에 태깅해 속도 변동을 흡수</li>
-					<li><span class="data">스테퍼 + 리니어 스테이지</span> — X축 선행 이동과 Z축 승강</li>
-					<li><span class="data">저전압 진공 흡착</span> — 접촉 즉시 유지력 발생. 압력은 진단 신호</li>
-				</ul>
-			</div>
-		</article>
-
-		<!-- 성과 지표 -->
-		<article class="panel" id="kpi" hidden aria-labelledby="kpi-title">
-			<div class="panel__inner">
-				<button class="panel__close" type="button">
-					<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2 2l12 12M14 2L2 14"></path></svg>
-					<span class="visually-hidden">닫기</span>
-				</button>
-				<h2 class="panel__title" id="kpi-title" tabindex="-1">성과 지표</h2>
-
-				<p class="badge badge--unmeasured">아직 측정 전 · 전부 목표치</p>
-
-				<p>아래 숫자는 <strong>달성한 값이 아니라 달성하려는 값</strong>입니다. 실측이 나오면 이 자리를 실측값과 신뢰구간으로 교체하고, 목표에 미치지 못한 항목도 그대로 남깁니다.</p>
-
+				<h3>목표 지표</h3>
 				<ul class="metrics">
 					<li class="metric">
 						<span class="metric__value sig-go">90%</span>
-						<span class="metric__name">픽 성공률 목표</span>
-						<span class="metric__note">벨트 10 cm/s 기준. 기준 영상으로 독립 판정한 적격 시도 대비</span>
+						<span class="metric__name">픽 성공률</span>
+						<span class="metric__note">기준 속도에서, 독립 판정한 적격 시도 대비</span>
 					</li>
 					<li class="metric">
 						<span class="metric__value sig-predict">+50%p</span>
-						<span class="metric__name">보상 효과 가설</span>
-						<span class="metric__note">보상 OFF 대비 성공률 차이. 이 셀이 존재하는 이유이자 검증 대상</span>
+						<span class="metric__name">지연 보상 효과</span>
+						<span class="metric__note">보상 미적용 대비 성공률 차이 — 핵심 검증 대상</span>
 					</li>
 					<li class="metric">
 						<span class="metric__value">150ms</span>
-						<span class="metric__name">E2E 지연 이하</span>
-						<span class="metric__note">총합만이 아니라 노출·전송·검출·통신 항목별로 분해해 보고</span>
+						<span class="metric__name">종단 지연 이하</span>
+						<span class="metric__note">총합만이 아니라 항목별로 분해해 보고</span>
 					</li>
 					<li class="metric">
 						<span class="metric__value">±5mm</span>
 						<span class="metric__name">접촉 위치 오차</span>
-						<span class="metric__note">절대값과 함께 부호 있는 값도 보고해 계통 편향을 드러낸다</span>
+						<span class="metric__note">절대값과 부호 있는 값을 함께 보고</span>
 					</li>
 					<li class="metric">
 						<span class="metric__value">12/min</span>
 						<span class="metric__name">유효 처리량 이상</span>
-						<span class="metric__note">동작 예산과 투입 간격 조건을 충족할 때만 평가한다</span>
+						<span class="metric__note">동작 예산과 투입 간격 조건 충족 시</span>
 					</li>
 					<li class="metric">
 						<span class="metric__value sig-go">30분</span>
 						<span class="metric__name">무개입 가동 이상</span>
-						<span class="metric__note">사람이 물체 제거·재시작·수동 조작을 하지 않은 연속 시간</span>
+						<span class="metric__note">사람의 개입 없이 지속한 연속 시간</span>
 					</li>
 				</ul>
 
-				<h3>가설 하나를 정직하게 재는 것</h3>
-				<p class="badge badge--hypothesis">측정 전 · 검증 대상</p>
-				<p>이 셀 전체가 <strong class="sig-predict">+50%p</strong>라는 숫자 하나를 정직하게 재기 위해 존재합니다. 같은 기구, 같은 속도, 같은 조명에서 <strong>지연 보상 항만 껐다 켰을 때</strong> 성공률이 얼마나 벌어지는가. 시장 추정치가 아니라 직접 만든 실측치로 채울 자리이고, 결과가 가설에 못 미치면 그 숫자를 그대로 싣습니다.</p>
-
-				<h3>분모를 섞지 않는다</h3>
-				<p>성공률, 적격률, 스킵률, 무효율은 각각 다른 분모를 씁니다. 자동 로그는 전량 남기되 최종 성과 판정은 독립 기준 영상 주석으로 하고, 조건별 판정불가율과 제외 사유를 표로 함께 제시합니다.</p>
-			</div>
-		</article>
-
-		<!-- 로드맵 -->
-		<article class="panel" id="roadmap" hidden aria-labelledby="roadmap-title">
-			<div class="panel__inner">
-				<button class="panel__close" type="button">
-					<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2 2l12 12M14 2L2 14"></path></svg>
-					<span class="visually-hidden">닫기</span>
-				</button>
-				<h2 class="panel__title" id="roadmap-title" tabindex="-1">로드맵</h2>
-
-				<p class="lede">순서가 곧 설계입니다. 지연을 재기 전에 예측을 만들면, 빗나가는 원인을 예측 알고리즘에서 찾다가 몇 주를 태웁니다.</p>
-
+				<h3>실증 일정</h3>
 				<ol class="phases">
 					<li class="phase">
-						<span class="phase__week">Week 1–2 · 계측과 기구</span>
-						<h3>먼저 지연부터 잰다</h3>
-						<p>사건 스키마와 두 장치의 분리된 시계 로그를 세우고, 노출·전송·검출·통신·기동을 항목별로 실측합니다. 그다음 X/Z 기구, 고정 조명, 물리 레인, 순환 슈트와 계량 게이트를 조립하고 인코더 거리 환산을 검증합니다.</p>
+						<span class="phase__week">1단계 · 계측과 기구</span>
+						<h3>지연부터 잰다</h3>
+						<p>사건 기록 체계와 분리된 시계 로그를 세우고, 노출·전송·검출·통신·기동을 항목별로 실측합니다. 이어서 구동축, 고정 조명, 물리 레인, 순환 공급 기구를 조립하고 거리 환산을 검증합니다.</p>
 					</li>
 					<li class="phase">
-						<span class="phase__week">Week 3–4 · 예측과 판정 준비</span>
+						<span class="phase__week">2단계 · 예측과 판정 준비</span>
 						<h3>보상 루프와 판정 체계</h3>
-						<p>단일 클래스 검출, 적격성 게이트, 인코더 태깅, 접촉 중심 예측과 no-pick 정책을 붙입니다. 이어서 X/Z/진공/복귀 시퀀스를 완성하고 기준 영상 배치와 동기 마커, 주석 도구와 세션 로그 양식을 준비합니다.</p>
+						<p>검출, 적격성 판정, 인코더 태깅, 접촉 위치 예측과 비동작 정책을 붙입니다. 이어서 동작 시퀀스를 완성하고 기준 영상과 판정 절차를 준비합니다.</p>
 					</li>
 					<li class="phase">
-						<span class="phase__week">Week 5–6 · 실행과 주석</span>
-						<h3>교차 실행 후 블라인드 판정</h3>
-						<p>고정 조건에서 보상 ON/OFF를 무작위 교차로 돌려 조건당 표본을 채우고, 이후 별도 주간에 블라인드 주석을 세션 분할로 수행합니다. 주석은 400~480건에 5~8시간이 드는 별도 공수라, 실행과 같은 주에 묶으면 세션 규칙이 무너집니다.</p>
+						<span class="phase__week">3단계 · 실증과 판정</span>
+						<h3>교차 실행 후 독립 판정</h3>
+						<p>고정 조건에서 보상 적용·미적용을 무작위 교차로 돌려 표본을 채우고, 이후 별도 기간에 블라인드 판정을 수행합니다. 판정은 자동화할 수 없는 별도 공수라 실행과 분리해 배치합니다.</p>
 					</li>
 				</ol>
 
-				<h3>이 결과가 말하지 않는 것</h3>
-				<p>측정이 끝나도 이 MVP가 판단하는 것은 세 가지뿐입니다. 과거 지연 표본 기반 보상이 동일 조건에서 접촉 오차와 성공률에 미친 영향, 지연 예산의 분해와 변동, 그리고 단일 레인 조건에서의 속도·간격·안전 복구 한계입니다.</p>
-				<p>이는 <strong>상용 라인 처리량, 산업 안전 인증, 다품종 분류 성능을 뜻하지 않습니다.</strong> 동시 추적·다중 등급·다중 빈·속도 매칭은 독립 정답 데이터와 안전·동작 예산을 다시 설계한 뒤에만 검토합니다.</p>
+				<h3>현 단계에서 말할 수 있는 것</h3>
+				<p>실증이 끝나면 세 가지를 정량적으로 제시할 수 있습니다 — <strong>지연 보상이 접촉 오차와 성공률에 미친 영향</strong>, <strong>지연 예산의 항목별 분해와 변동</strong>, 그리고 <strong>단일 레인 조건에서의 속도·간격·복구 한계</strong>입니다.</p>
+				<p>그 시점에도 상용 라인 처리량, 산업 안전 인증, 다품종 분류 성능은 별도 검증이 필요한 항목으로 남습니다. 동시 추적, 다중 등급, 다중 배출, 속도 매칭은 다음 단계의 과제입니다.</p>
 			</div>
 		</article>
 
@@ -387,7 +683,7 @@
 				</button>
 				<h2 class="panel__title" id="contact-title" tabindex="-1">문의</h2>
 
-				<p class="lede">비슷한 문제를 다루고 계시거나 설계에 이견이 있다면 알려주세요. <strong>측정 절차에 대한 지적은 특히 환영합니다.</strong></p>
+				<p class="lede">도입 검토, 공동 개발, 기술 문의 모두 환영합니다. 다루고 계신 라인 조건(물체 크기와 무게, 벨트 속도, 투입 간격, 표면 재질)을 함께 알려주시면 적용 가능성을 더 정확히 검토해 드릴 수 있습니다.</p>
 
 				<form class="form" id="contactForm" novalidate>
 					<div class="form__row">
@@ -401,7 +697,7 @@
 						</div>
 						<div class="form__field form__field--full">
 							<label for="message">문의 내용</label>
-							<textarea id="message" name="message" rows="5" placeholder="다루고 계신 라인 조건이나, 측정 설계에 대한 의견을 적어주세요."></textarea>
+							<textarea id="message" name="message" rows="5" placeholder="다루고 계신 라인 조건이나 검토 중인 과제를 적어주세요."></textarea>
 						</div>
 					</div>
 					<div class="form__actions">
@@ -411,12 +707,27 @@
 					<p class="status" id="formStatus" role="status" aria-live="polite" hidden></p>
 				</form>
 
-				<h3>문서</h3>
+				<h3>회사 정보</h3>
+				<div class="sheet-wrap">
+					<table class="sheet">
+						<caption class="visually-hidden">회사 기본 정보</caption>
+						<tbody>
+							<tr><td>상호</td><td class="sig-hold">— 입력 필요</td></tr>
+							<tr><td>대표</td><td class="sig-hold">— 입력 필요</td></tr>
+							<tr><td>사업자등록번호</td><td class="sig-hold">— 입력 필요</td></tr>
+							<tr><td>소재지</td><td class="sig-hold">— 입력 필요</td></tr>
+							<tr><td>이메일</td><td class="sig-hold">— 입력 필요</td></tr>
+						</tbody>
+					</table>
+				</div>
+
+				<h3>기술 문서</h3>
+				<p>요청하시면 아래 문서를 제공합니다.</p>
 				<ul class="docs">
-					<li><span class="docs__kind">PRD</span> <span>지연 보상 기반 X/Z 컨베이어 트래킹 픽킹 연구 셀</span></li>
-					<li><span class="docs__kind">Report</span> <span>MVP 의사결정·실행 보고서</span></li>
-					<li><span class="docs__kind">Report</span> <span>피벗 후보 심사 및 TOP 5</span></li>
-					<li><span class="docs__kind">Design</span> <span>FLOWPICK 디자인 시스템</span></li>
+					<li><span class="docs__kind">사양</span> <span>제품 요구 정의 — 물리 범위, 시간 인과성, 안전 상태</span></li>
+					<li><span class="docs__kind">사양</span> <span>하드웨어 부품·전원 사양</span></li>
+					<li><span class="docs__kind">설계</span> <span>측정·검증 계획과 판정 절차</span></li>
+					<li><span class="docs__kind">설계</span> <span>기록·분석 데이터 구조</span></li>
 				</ul>
 			</div>
 		</article>
@@ -424,7 +735,7 @@
 	</main>
 
 	<footer class="foot">
-		<p>&copy; 2026 FLOWPICK — 지연 보상 컨베이어 트래킹 픽킹 연구 셀. 아직 구축·측정되지 않았습니다.</p>
+		<p>&copy; 2026 FLOWPICK — 컨베이어 트래킹 픽킹 기술 개발</p>
 	</footer>
 
 </div>
