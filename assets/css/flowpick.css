@@ -870,6 +870,7 @@ body.is-panel-open .foot { opacity: 0; pointer-events: none; }
 	}
 
 	.sheet-wrap::after { content: "← 표를 좌우로 밀어 보세요 →"; }
+	.sheet-wrap--no-scroll-cue::after { content: none; }
 	.diagram__scroll::after { content: "← 그림을 좌우로 밀어 보세요 →"; }
 	.diagram { padding: var(--space-3); }
 	.form__row { grid-template-columns: 1fr; }

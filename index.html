@@ -195,6 +195,130 @@
 
 				<p class="lede">지연이 성능을 직접 결정하는 문제에서는 <strong>부품 사양보다 설계 판단이 결과를 가릅니다.</strong> 아래는 요구 조건에서 논리적으로 강제된 선택들입니다.</p>
 
+				<h3>전체 구성</h3>
+
+				<figure class="diagram">
+					<div class="diagram__scroll">
+						<svg viewBox="0 0 880 545" role="img" aria-labelledby="saTitle saDesc" xmlns="http://www.w3.org/2000/svg">
+							<title id="saTitle">시스템 전체 구성도</title>
+							<desc id="saDesc">입력·센싱에서 연산, 실시간 제어, 구동으로 이어지는 주 경로와, 별도로 분리된 독립 판정 계층 및 기록·분석 계층을 나타냅니다. 기록·분석 계층에서 제어로 되돌아가는 경로는 존재하지 않습니다.</desc>
+
+							<!-- 컨테이너 -->
+							<g font-family="ui-monospace, Menlo, monospace" font-weight="600">
+								<!-- 입력·센싱 -->
+								<rect x="15" y="75" width="185" height="235" rx="4" fill="none" stroke="#89b7c7" stroke-width="1.5"></rect>
+								<text x="107" y="101" fill="#89b7c7" font-size="12" text-anchor="middle">입력 · 센싱</text>
+								<g fill="#aab0ad" font-size="11" text-anchor="middle">
+									<text x="107" y="131">컨베이어</text>
+									<text x="107" y="151">가이드 레일 (y_lane)</text>
+									<text x="107" y="171">글로벌 셔터 카메라</text>
+									<text x="107" y="191">로터리 인코더</text>
+									<text x="107" y="211">IR 센서 ×2</text>
+									<text x="107" y="231">링라이트 · 차광</text>
+									<text x="107" y="251">순환 공급 기구</text>
+								</g>
+
+								<!-- 연산 -->
+								<rect x="235" y="75" width="185" height="235" rx="4" fill="none" stroke="#566067" stroke-width="1.5"></rect>
+								<text x="327" y="101" fill="#f2eee4" font-size="12" text-anchor="middle">연산 — 검출 · 예측</text>
+								<g fill="#aab0ad" font-size="11" text-anchor="middle">
+									<text x="327" y="131">단일 클래스 검출</text>
+									<text x="327" y="151">인코더 태깅</text>
+									<text x="327" y="171">속도 추정</text>
+									<text x="327" y="191">지연 보상 예측</text>
+									<text x="327" y="211">적격성 게이트</text>
+									<text x="327" y="231">로그 수집</text>
+								</g>
+
+								<!-- 실시간 제어 -->
+								<rect x="455" y="75" width="185" height="235" rx="4" fill="none" stroke="#8baf85" stroke-width="1.5"></rect>
+								<text x="547" y="101" fill="#8baf85" font-size="12" text-anchor="middle">실시간 제어</text>
+								<g fill="#aab0ad" font-size="11" text-anchor="middle">
+									<text x="547" y="131">안전 상태 기계</text>
+									<text x="547" y="151">모션 펄스 생성</text>
+									<text x="547" y="171">진공 타이밍</text>
+									<text x="547" y="191">하드웨어 카운터</text>
+									<text x="547" y="211">비상정지 · 워치독</text>
+								</g>
+								<text x="547" y="240" fill="#8baf85" font-size="10" text-anchor="middle">안전 권한 보유</text>
+
+								<!-- 구동 -->
+								<rect x="675" y="75" width="185" height="235" rx="4" fill="none" stroke="#566067" stroke-width="1.5"></rect>
+								<text x="767" y="101" fill="#f2eee4" font-size="12" text-anchor="middle">구동</text>
+								<g fill="#aab0ad" font-size="11" text-anchor="middle">
+									<text x="767" y="131">X 리니어 축</text>
+									<text x="767" y="151">Z 승강 · 흡반</text>
+									<text x="767" y="171">펌프 · 3포트 밸브</text>
+									<text x="767" y="191">계량 게이트 서보</text>
+									<text x="767" y="211">벨트 모터</text>
+									<text x="767" y="231">동기 표시등</text>
+								</g>
+
+								<!-- 기록·분석 (제안) -->
+								<rect x="235" y="390" width="185" height="130" rx="4" fill="none" stroke="#aab0ad" stroke-width="1.5" stroke-dasharray="5 4"></rect>
+								<text x="327" y="416" fill="#aab0ad" font-size="12" text-anchor="middle">기록 · 분석 (제안)</text>
+								<g fill="#aab0ad" font-size="11" text-anchor="middle">
+									<text x="327" y="444">원시 이벤트</text>
+									<text x="327" y="464">결정론 분석</text>
+									<text x="327" y="484">증거 묶음</text>
+									<text x="327" y="504">설명 계층 (읽기 전용)</text>
+								</g>
+
+								<!-- 독립 판정 -->
+								<rect x="675" y="390" width="185" height="130" rx="4" fill="none" stroke="#89b7c7" stroke-width="1.5"></rect>
+								<text x="767" y="416" fill="#89b7c7" font-size="12" text-anchor="middle">독립 판정</text>
+								<g fill="#aab0ad" font-size="11" text-anchor="middle">
+									<text x="767" y="444">기준 영상 장치</text>
+									<text x="767" y="464">블라인드 주석</text>
+									<text x="767" y="484">접촉 오차 · 성패</text>
+								</g>
+								<text x="767" y="508" fill="#89b7c7" font-size="10" text-anchor="middle">전기 연결 없음</text>
+							</g>
+
+							<!-- 주 경로 -->
+							<line x1="200" y1="150" x2="228" y2="150" stroke="#89b7c7" stroke-width="1.5" marker-end="url(#saArrowB)"></line>
+							<text x="214" y="141" fill="#89b7c7" font-family="ui-monospace, Menlo, monospace" font-size="9" font-weight="600" text-anchor="middle">영상</text>
+
+							<line x1="420" y1="140" x2="448" y2="140" stroke="#cbb67b" stroke-width="2" marker-end="url(#saArrowP)"></line>
+							<text x="434" y="128" fill="#cbb67b" font-family="ui-monospace, Menlo, monospace" font-size="9" font-weight="600" text-anchor="middle">명령</text>
+
+							<line x1="455" y1="190" x2="427" y2="190" stroke="#aab0ad" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#saArrowM)"></line>
+							<text x="441" y="205" fill="#aab0ad" font-family="ui-monospace, Menlo, monospace" font-size="9" font-weight="600" text-anchor="middle">기록</text>
+
+							<line x1="640" y1="150" x2="668" y2="150" stroke="#566067" stroke-width="1.5" marker-end="url(#saArrow)"></line>
+							<text x="654" y="141" fill="#aab0ad" font-family="ui-monospace, Menlo, monospace" font-size="9" font-weight="600" text-anchor="middle">펄스</text>
+
+							<!-- 센싱 -> 제어 (상단 우회) -->
+							<path d="M107 75 V40 H547 V71" fill="none" stroke="#89b7c7" stroke-width="1.5" marker-end="url(#saArrowB)"></path>
+							<text x="327" y="32" fill="#89b7c7" font-family="ui-monospace, Menlo, monospace" font-size="10" font-weight="600" text-anchor="middle">인코더 · IR · 압력 — 안전 판정 입력</text>
+
+							<!-- 연산 -> 기록·분석 -->
+							<line x1="327" y1="310" x2="327" y2="384" stroke="#aab0ad" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#saArrowM)"></line>
+							<text x="339" y="352" fill="#aab0ad" font-family="ui-monospace, Menlo, monospace" font-size="10" font-weight="600">원시 기록</text>
+
+							<!-- 구동 -> 독립 판정 (빛) -->
+							<line x1="767" y1="310" x2="767" y2="384" stroke="#cbb67b" stroke-width="1.5" stroke-dasharray="2 4" marker-end="url(#saArrowP)"></line>
+							<text x="779" y="352" fill="#cbb67b" font-family="ui-monospace, Menlo, monospace" font-size="10" font-weight="600">빛으로만 동기</text>
+
+							<!-- 존재하지 않는 경로 -->
+							<line x1="424" y1="425" x2="495" y2="322" stroke="#c97872" stroke-width="1.5" stroke-dasharray="6 5" opacity="0.6"></line>
+							<g stroke="#c97872" stroke-width="2">
+								<line x1="448" y1="362" x2="470" y2="384"></line>
+								<line x1="470" y1="362" x2="448" y2="384"></line>
+							</g>
+							<text x="505" y="400" fill="#c97872" font-family="ui-monospace, Menlo, monospace" font-size="10" font-weight="600">제어 방향 연결 없음</text>
+
+							<defs>
+								<marker id="saArrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><polygon points="0 0, 7 3.5, 0 7" fill="#566067"></polygon></marker>
+								<marker id="saArrowB" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><polygon points="0 0, 7 3.5, 0 7" fill="#89b7c7"></polygon></marker>
+								<marker id="saArrowP" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><polygon points="0 0, 7 3.5, 0 7" fill="#cbb67b"></polygon></marker>
+								<marker id="saArrowM" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><polygon points="0 0, 7 3.5, 0 7" fill="#aab0ad"></polygon></marker>
+							</defs>
+						</svg>
+					</div>
+					<figcaption>주 경로는 <span class="sig-observe">센싱</span> → 연산 → <span class="sig-go">실시간 제어</span> → 구동입니다. 안전 판정 입력은 연산을 거치지 않고 <strong>제어로 직접</strong> 들어갑니다 — 연산부가 멈춰도 안전은 동작해야 하기 때문입니다. <span class="sig-observe">독립 판정</span>은 전기적으로 연결되지 않고, <span class="sig-stop">붉은 점선</span>은 의도적으로 만들지 않은 경로입니다.</figcaption>
+				</figure>
+
 				<h3>인코더 태깅으로 속도 변동을 흡수한다</h3>
 				<p>벨트 속도는 부하와 전압에 따라 흔들립니다. "속도 × 경과시간"으로 위치를 계산하면 오차가 계속 쌓입니다. 우리는 물체를 발견한 순간의 <strong>인코더 눈금을 그 물체에 이름표처럼 붙입니다.</strong> 이후 위치는 눈금 차이로만 계산되므로, 벨트가 빨라지든 느려지든 정확합니다. 속도를 추정할 필요 자체가 사라집니다.</p>
 
@@ -382,7 +506,7 @@
 
 				<h3>센서·표시 인터페이스</h3>
 				<p>아래는 배선과 부품 사양을 제외하고 공개하는 인터페이스 책임입니다.</p>
-				<div class="sheet-wrap">
+				<div class="sheet-wrap sheet-wrap--no-scroll-cue">
 					<table class="sheet">
 						<caption class="visually-hidden">공개 하드웨어 설계의 센서 및 광학 타이밍 표시 인터페이스와 책임 경계</caption>
 						<thead>
